@@ -16,6 +16,7 @@ import org.elasticsearch.search.internal.ShardSearchContextId;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.transport.TransportResponse;
+import org.spr.utils.PerfTrackingResult;
 
 import java.io.IOException;
 
@@ -27,13 +28,16 @@ import java.io.IOException;
  * across search phases to ensure the same point in time snapshot is used for querying and
  * fetching etc.
  */
-public abstract class SearchPhaseResult extends TransportResponse {
+public abstract class SearchPhaseResult extends TransportResponse implements PerfTrackingResult {
 
     private SearchShardTarget searchShardTarget;
     private int shardIndex = -1;
     protected ShardSearchContextId contextId;
     private ShardSearchRequest shardSearchRequest;
     private RescoreDocIds rescoreDocIds = RescoreDocIds.EMPTY;
+
+    public String perfStats;
+    public String getPerfStats(){return perfStats;}
 
     protected SearchPhaseResult() {
 
@@ -106,5 +110,10 @@ public abstract class SearchPhaseResult extends TransportResponse {
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         // TODO: this seems wrong, SearchPhaseResult should have a writeTo?
+    }
+
+    @Override
+    public void setPerfStats(String perfStats) {
+        this.perfStats = perfStats;
     }
 }

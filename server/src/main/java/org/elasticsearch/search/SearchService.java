@@ -114,6 +114,7 @@ import org.elasticsearch.threadpool.Scheduler.Cancellable;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.threadpool.ThreadPool.Names;
 import org.elasticsearch.transport.TransportRequest;
+import org.spr.utils.PerfTrackingSupplier;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -391,8 +392,20 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                         return;
                     }
                 }
-                // fork the execution in the search thread pool
-                runAsync(getExecutor(shard), () -> executeQueryPhase(orig, task, keepStatesInContext), listener);
+                PerfTrackingSupplier perfTrackingSupplier = null;
+                try {
+                    perfTrackingSupplier = new PerfTrackingSupplier(()-> {
+                        try {
+                            return executeQueryPhase(orig, task, keepStatesInContext);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    },shard.shardId().id());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+                runAsync(getExecutor(shard),perfTrackingSupplier, listener);
             }
 
             @Override

@@ -54,6 +54,8 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
     private static final ParseField POINT_IN_TIME_ID = new ParseField("pit_id");
     private static final ParseField TOOK = new ParseField("took");
     private static final ParseField TIMED_OUT = new ParseField("timed_out");
+
+    private static final ParseField PERF_STATS = new ParseField("perf_stats");
     private static final ParseField TERMINATED_EARLY = new ParseField("terminated_early");
     private static final ParseField NUM_REDUCE_PHASES = new ParseField("num_reduce_phases");
 
@@ -66,6 +68,8 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
     private final ShardSearchFailure[] shardFailures;
     private final Clusters clusters;
     private final long tookInMillis;
+
+    private String perfStats;
 
     public SearchResponse(StreamInput in) throws IOException {
         super(in);
@@ -104,6 +108,7 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
     public SearchResponse(SearchResponseSections internalResponse, String scrollId, int totalShards, int successfulShards,
                           int skippedShards, long tookInMillis, ShardSearchFailure[] shardFailures, Clusters clusters,
                           String pointInTimeId) {
+        //Set PerfStats Here
         this.internalResponse = internalResponse;
         this.scrollId = scrollId;
         this.pointInTimeId = pointInTimeId;
@@ -259,6 +264,7 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
         }
         builder.field(TOOK.getPreferredName(), tookInMillis);
         builder.field(TIMED_OUT.getPreferredName(), isTimedOut());
+        builder.field(PERF_STATS.getPreferredName(), "Currently Empty");
         if (isTerminatedEarly() != null) {
             builder.field(TERMINATED_EARLY.getPreferredName(), isTerminatedEarly());
         }

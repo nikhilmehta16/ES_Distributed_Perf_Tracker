@@ -42,6 +42,7 @@ public final class QuerySearchResult extends SearchPhaseResult {
     private TotalHits totalHits;
     private float maxScore = Float.NaN;
     private DocValueFormat[] sortValueFormats;
+    public String perfStats;
     /**
      * Aggregation results. We wrap them in
      * {@linkplain DelayableWriteable} because
@@ -431,4 +432,10 @@ public final class QuerySearchResult extends SearchPhaseResult {
     public float getMaxScore() {
         return maxScore;
     }
+
+    @Override
+    public void setPerfStats(String perfStats) {
+        this.perfStats = perfStats;
+    }
+
 }
