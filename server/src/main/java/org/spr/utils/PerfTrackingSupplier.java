@@ -16,13 +16,13 @@ import java.util.function.Supplier;
 
 public class PerfTrackingSupplier<T extends SearchPhaseResult,E extends Exception> implements CheckedSupplier<T, Exception> {
     private PerfTracker.PerfStats perfStats;
-    private int shardId;
+    private String shardId;
     private long creationTime;
 
     //when execution starte
     private long executionStartTime;
     private final Supplier<T> supplier;
-    public PerfTrackingSupplier(Supplier<T> supplier, int shardId) throws Exception{
+    public PerfTrackingSupplier(Supplier<T> supplier, String shardId) throws Exception{
         this.supplier = supplier;
         this.creationTime = System.nanoTime();
         this.shardId = shardId;
@@ -37,9 +37,9 @@ public class PerfTrackingSupplier<T extends SearchPhaseResult,E extends Exceptio
         executionStartTime = System.nanoTime();
         this.perfStats =  PerfTracker.start();
         PerfTracker.executorDelay(executionStartTime-creationTime);
-        PerfTracker.in("ShardId("+shardId+")");
+        PerfTracker.in(shardId);
         T result = this.supplier.get();
-        PerfTracker.out("ShardId("+shardId+")");
+        PerfTracker.out(shardId);
         result.setPerfStats(perfStats.stopAndGetStacked());
         return result;
     }

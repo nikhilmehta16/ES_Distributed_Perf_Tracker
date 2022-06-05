@@ -400,7 +400,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
-                    },shard.shardId().id());
+                    },shard.shardId().toString());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
