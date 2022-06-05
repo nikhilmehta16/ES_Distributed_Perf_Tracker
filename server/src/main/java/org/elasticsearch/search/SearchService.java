@@ -114,6 +114,7 @@ import org.elasticsearch.threadpool.Scheduler.Cancellable;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.threadpool.ThreadPool.Names;
 import org.elasticsearch.transport.TransportRequest;
+import org.spr.utils.PerfTrackingSupplier;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -391,8 +392,16 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                         return;
                     }
                 }
-                // fork the execution in the search thread pool
-                runAsync(getExecutor(shard), () -> executeQueryPhase(orig, task, keepStatesInContext), listener);
+                PerfTrackingSupplier perfTrackingSupplier = null;
+
+                try {
+                    perfTrackingSupplier = new PerfTrackingSupplier(()->executeQueryPhase(orig, task, keepStatesInContext),
+                        shard.shardId().toString(),"Query", shard.indexSettings().getPerfVerbosity(), indicesService.getPerfVerbosity());
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+
+                runAsync(getExecutor(shard),perfTrackingSupplier, listener);
             }
 
             @Override
@@ -570,29 +579,38 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         final ReaderContext readerContext = findReaderContext(request.contextId(), request);
         final ShardSearchRequest shardSearchRequest = readerContext.getShardSearchRequest(request.getShardSearchRequest());
         final Releasable markAsUsed = readerContext.markAsUsed(getKeepAlive(shardSearchRequest));
-        runAsync(getExecutor(readerContext.indexShard()), () -> {
-            try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false)) {
-                if (request.lastEmittedDoc() != null) {
-                    searchContext.scrollContext().lastEmittedDoc = request.lastEmittedDoc();
-                }
-                searchContext.assignRescoreDocIds(readerContext.getRescoreDocIds(request.getRescoreDocIds()));
-                searchContext.searcher().setAggregatedDfs(readerContext.getAggregatedDfs(request.getAggregatedDfs()));
-                searchContext.docIdsToLoad(request.docIds(), request.docIdsSize());
-                try (SearchOperationListenerExecutor executor =
-                         new SearchOperationListenerExecutor(searchContext, true, System.nanoTime())) {
-                    fetchPhase.execute(searchContext);
-                    if (readerContext.singleSession()) {
-                        freeReaderContext(request.contextId());
+        int indexPerfVerbosity = getShard(shardSearchRequest).indexSettings().getPerfVerbosity();
+        int clusterPerfVerbosity = indicesService.getPerfVerbosity();
+        PerfTrackingSupplier perfTrackingSupplier = null;
+        try {
+            perfTrackingSupplier = new PerfTrackingSupplier(() -> {
+                try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false)) {
+                    if (request.lastEmittedDoc() != null) {
+                        searchContext.scrollContext().lastEmittedDoc = request.lastEmittedDoc();
                     }
-                    executor.success();
+                    searchContext.assignRescoreDocIds(readerContext.getRescoreDocIds(request.getRescoreDocIds()));
+                    searchContext.searcher().setAggregatedDfs(readerContext.getAggregatedDfs(request.getAggregatedDfs()));
+                    searchContext.docIdsToLoad(request.docIds(), request.docIdsSize());
+                    try (SearchOperationListenerExecutor executor =
+                             new SearchOperationListenerExecutor(searchContext, true, System.nanoTime())) {
+                        fetchPhase.execute(searchContext);
+                        if (readerContext.singleSession()) {
+                            freeReaderContext(request.contextId());
+                        }
+                        executor.success();
+                    }
+                    return searchContext.fetchResult();
+                } catch (Exception e) {
+                    assert TransportActions.isShardNotAvailableException(e) == false : new AssertionError(e);
+                    // we handle the failure in the failure listener below
+                        throw e;
+
                 }
-                return searchContext.fetchResult();
-            } catch (Exception e) {
-                assert TransportActions.isShardNotAvailableException(e) == false : new AssertionError(e);
-                // we handle the failure in the failure listener below
-                throw e;
-            }
-        }, wrapFailureListener(listener, readerContext, markAsUsed));
+            },readerContext.indexShard().shardId().toString(),"Fetch", indexPerfVerbosity, clusterPerfVerbosity);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        runAsync(getExecutor(readerContext.indexShard()), perfTrackingSupplier, wrapFailureListener(listener, readerContext, markAsUsed));
     }
 
     private ReaderContext getReaderContext(ShardSearchContextId id) {

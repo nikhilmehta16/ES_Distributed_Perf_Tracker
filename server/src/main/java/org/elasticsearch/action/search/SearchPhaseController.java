@@ -47,6 +47,9 @@ import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.search.suggest.Suggest;
 import org.elasticsearch.search.suggest.Suggest.Suggestion;
 import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
+import org.spr.utils.performance.PerfTracker;
+import org.spr.utils.results.PerfResults;
+import org.spr.utils.results.PhasePerfResult;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -400,6 +403,7 @@ public final class SearchPhaseController {
                                         TopDocsStats topDocsStats, int numReducePhases, boolean isScrollRequest,
                                         InternalAggregation.ReduceContextBuilder aggReduceContextBuilder,
                                         boolean performFinalReduce) {
+        PerfTracker.PerfStats perfStats = PerfTracker.start();
         assert numReducePhases >= 0 : "num reduce phases must be >= 0 but was: " + numReducePhases;
         numReducePhases++; // increment for this phase
         if (queryResults.isEmpty()) { // early terminate we have nothing to reduce
@@ -464,13 +468,19 @@ public final class SearchPhaseController {
             reducedSuggest = new Suggest(Suggest.reduce(groupedSuggestions));
             reducedCompletionSuggestions = reducedSuggest.filter(CompletionSuggestion.class);
         }
+        PerfTracker.in("Reducing Aggregations");
         final InternalAggregations aggregations = reduceAggs(aggReduceContextBuilder, performFinalReduce, bufferedAggs);
+        PerfTracker.out("Reducing Aggregations");
         final SearchProfileShardResults shardResults = profileResults.isEmpty() ? null : new SearchProfileShardResults(profileResults);
         final SortedTopDocs sortedTopDocs = sortDocs(isScrollRequest, bufferedTopDocs, from, size, reducedCompletionSuggestions);
         final TotalHits totalHits = topDocsStats.getTotalHits();
-        return new ReducedQueryPhase(totalHits, topDocsStats.fetchHits, topDocsStats.getMaxScore(),
+        ReducedQueryPhase reducedQueryPhase = new ReducedQueryPhase(totalHits, topDocsStats.fetchHits, topDocsStats.getMaxScore(),
             topDocsStats.timedOut, topDocsStats.terminatedEarly, reducedSuggest, aggregations, shardResults, sortedTopDocs,
             sortValueFormats, numReducePhases, size, from, false);
+        reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(queryResults, "Query_Phase"));
+        reducedQueryPhase.getPerfResults().addPerfStats(perfStats.stopAndGetStat());
+        PerfTracker.reset();
+        return reducedQueryPhase;
     }
 
     private static InternalAggregations reduceAggs(InternalAggregation.ReduceContextBuilder aggReduceContextBuilder,
@@ -551,6 +561,7 @@ public final class SearchPhaseController {
         final int from;
         // sort value formats used to sort / format the result
         final DocValueFormat[] sortValueFormats;
+        private PerfResults perfResults = new PerfResults(Collections.emptyList());
 
         ReducedQueryPhase(TotalHits totalHits, long fetchHits, float maxScore, boolean timedOut, Boolean terminatedEarly, Suggest suggest,
                           InternalAggregations aggregations, SearchProfileShardResults shardResults, SortedTopDocs sortedTopDocs,
@@ -579,8 +590,19 @@ public final class SearchPhaseController {
          * @see #merge(boolean, ReducedQueryPhase, Collection, IntFunction)
          */
         public InternalSearchResponse buildResponse(SearchHits hits) {
-            return new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut, terminatedEarly, numReducePhases);
+            InternalSearchResponse internalSearchResponse = new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut,
+                                                            terminatedEarly, numReducePhases);
+            return internalSearchResponse;
         }
+
+        public void addPhasePerfResult(PhasePerfResult phasePerfResult){
+            this.perfResults.addPhasePerfResult(phasePerfResult);
+        }
+
+        public PerfResults getPerfResults(){
+            return perfResults;
+        }
+
     }
 
     InternalAggregation.ReduceContextBuilder getReduceContext(SearchRequest request) {

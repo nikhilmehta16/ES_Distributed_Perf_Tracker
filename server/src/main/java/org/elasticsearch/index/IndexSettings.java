@@ -36,6 +36,7 @@ import static org.elasticsearch.index.mapper.MapperService.INDEX_MAPPING_FIELD_N
 import static org.elasticsearch.index.mapper.MapperService.INDEX_MAPPING_NESTED_DOCS_LIMIT_SETTING;
 import static org.elasticsearch.index.mapper.MapperService.INDEX_MAPPING_NESTED_FIELDS_LIMIT_SETTING;
 import static org.elasticsearch.index.mapper.MapperService.INDEX_MAPPING_TOTAL_FIELDS_LIMIT_SETTING;
+import static org.spr.utils.PerfTrackerSettings.INDEX_VERBOSITY_LEVEL;
 
 /**
  * This class encapsulates all index level settings and handles settings updates.
@@ -403,6 +404,8 @@ public final class IndexSettings {
     private volatile long mappingDepthLimit;
     private volatile long mappingFieldNameLengthLimit;
 
+    private volatile int perfVerbosity;
+
     /**
      * The maximum number of refresh listeners allows on this shard.
      */
@@ -528,6 +531,9 @@ public final class IndexSettings {
         mappingTotalFieldsLimit = scopedSettings.get(INDEX_MAPPING_TOTAL_FIELDS_LIMIT_SETTING);
         mappingDepthLimit = scopedSettings.get(INDEX_MAPPING_DEPTH_LIMIT_SETTING);
         mappingFieldNameLengthLimit = scopedSettings.get(INDEX_MAPPING_FIELD_NAME_LENGTH_LIMIT_SETTING);
+        perfVerbosity = scopedSettings.get(INDEX_VERBOSITY_LEVEL);
+
+        scopedSettings.addSettingsUpdateConsumer(INDEX_VERBOSITY_LEVEL,this::setPerfVerbosity);
 
         scopedSettings.addSettingsUpdateConsumer(MergePolicyConfig.INDEX_COMPOUND_FORMAT_SETTING, mergePolicyConfig::setNoCFSRatio);
         scopedSettings.addSettingsUpdateConsumer(MergePolicyConfig.INDEX_MERGE_POLICY_DELETES_PCT_ALLOWED_SETTING,
@@ -757,6 +763,13 @@ public final class IndexSettings {
         this.durability = durability;
     }
 
+    private void setPerfVerbosity(int perfVerbosity){
+        this.perfVerbosity = perfVerbosity;
+    }
+
+    public int getPerfVerbosity(){
+        return this.perfVerbosity;
+    }
     /**
      * Returns true if index warmers are enabled, otherwise <code>false</code>
      */
