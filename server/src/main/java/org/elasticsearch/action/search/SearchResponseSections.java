@@ -16,7 +16,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.profile.ProfileShardResult;
 import org.elasticsearch.search.profile.SearchProfileShardResults;
 import org.elasticsearch.search.suggest.Suggest;
-import org.spr.utils.PerfTrackerResult;
+import org.spr.utils.results.PerfResults;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -38,7 +38,7 @@ public class SearchResponseSections implements ToXContentFragment{
     protected final boolean timedOut;
     protected final Boolean terminatedEarly;
     protected final int numReducePhases;
-    protected PerfTrackerResult perfTrackerResult;
+    protected PerfResults perfResults;
 
     public SearchResponseSections(SearchHits hits, Aggregations aggregations, Suggest suggest, boolean timedOut, Boolean terminatedEarly,
                                   SearchProfileShardResults profileResults,  int numReducePhases) {
@@ -94,6 +94,7 @@ public class SearchResponseSections implements ToXContentFragment{
     @Override
     public final XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         hits.toXContent(builder, params);
+        perfResults.toXContent(builder,params);
         if (aggregations != null) {
             aggregations.toXContent(builder, params);
         }
@@ -112,13 +113,13 @@ public class SearchResponseSections implements ToXContentFragment{
 
 
 
-    public void setPerfTrackerResult(PerfTrackerResult perfTrackerResult) {
-        this.perfTrackerResult = perfTrackerResult;
+    public void setPerfResults(PerfResults perfResults) {
+        this.perfResults = perfResults;
     }
 
 
-    public PerfTrackerResult getPerfTrackerResult() {
-        return perfTrackerResult;
+    public PerfResults getPerfResults() {
+        return this.perfResults;
     }
 
 

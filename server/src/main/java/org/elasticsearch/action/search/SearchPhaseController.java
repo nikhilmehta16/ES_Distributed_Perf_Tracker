@@ -47,7 +47,9 @@ import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.search.suggest.Suggest;
 import org.elasticsearch.search.suggest.Suggest.Suggestion;
 import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
-import org.spr.utils.MergedPerfStats;
+import org.spr.utils.results.PerfResults;
+import org.spr.utils.results.PhasePerfResult;
+import org.spr.utils.results.ShardPerfResult;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -295,11 +297,12 @@ public final class SearchPhaseController {
                 assert currentOffset == sortedDocs.length : "expected no more score doc slices";
             }
         }
-        MergedPerfStats mergedPerfStats = reducedQueryPhase.getMergedPerfResults();
-        for(SearchPhaseResult searchPhaseResult: fetchResults){
-            mergedPerfStats.mergeResult(searchPhaseResult.getPerfTrackerResult());
-        }
 
+        List<ShardPerfResult> shardPerfResults = new ArrayList<>();
+        for(SearchPhaseResult searchPhaseResult: fetchResults){
+            shardPerfResults.add(searchPhaseResult.getShardPerfResult());
+        }
+        reducedQueryPhase.addPhasePerfResult(shardPerfResults, "Fetch_Phase");
         return reducedQueryPhase.buildResponse(hits);
     }
 
@@ -432,7 +435,7 @@ public final class SearchPhaseController {
             : Collections.emptyMap();
         int from = 0;
         int size = 0;
-        MergedPerfStats mergedPerfStats = new MergedPerfStats();
+        List<ShardPerfResult> shardPerfResults = new ArrayList<>();
         DocValueFormat[] sortValueFormats = null;
         for (SearchPhaseResult entry : queryResults) {
             QuerySearchResult result = entry.queryResult();
@@ -442,7 +445,7 @@ public final class SearchPhaseController {
             if (result.sortValueFormats() != null) {
                 sortValueFormats = result.sortValueFormats();
             }
-            mergedPerfStats.mergeResult(entry.getPerfTrackerResult());
+            shardPerfResults.add(entry.getShardPerfResult());
             if (hasSuggest) {
                 assert result.suggest() != null;
                 for (Suggestion<? extends Suggestion.Entry<? extends Suggestion.Entry.Option>> suggestion : result.suggest()) {
@@ -478,7 +481,7 @@ public final class SearchPhaseController {
         ReducedQueryPhase reducedQueryPhase = new ReducedQueryPhase(totalHits, topDocsStats.fetchHits, topDocsStats.getMaxScore(),
             topDocsStats.timedOut, topDocsStats.terminatedEarly, reducedSuggest, aggregations, shardResults, sortedTopDocs,
             sortValueFormats, numReducePhases, size, from, false);
-        reducedQueryPhase.setMergedPerfStats(mergedPerfStats);
+        reducedQueryPhase.addPhasePerfResult(shardPerfResults,"Query_Phase");
         return reducedQueryPhase;
     }
 
@@ -562,7 +565,7 @@ public final class SearchPhaseController {
         final DocValueFormat[] sortValueFormats;
 
 //        private Map<String,String> perfStats;
-          private MergedPerfStats mergedPerfStats;
+        private List<PhasePerfResult> phasePerfResults = new ArrayList<>();
 
 
         ReducedQueryPhase(TotalHits totalHits, long fetchHits, float maxScore, boolean timedOut, Boolean terminatedEarly, Suggest suggest,
@@ -591,22 +594,21 @@ public final class SearchPhaseController {
          * Creates a new search response from the given merged hits.
          * @see #merge(boolean, ReducedQueryPhase, Collection, IntFunction)
          */
-        @SuppressWarnings("checkstyle:LineLength")
         public InternalSearchResponse buildResponse(SearchHits hits) {
-            InternalSearchResponse internalSearchResponse = new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut, terminatedEarly, numReducePhases);
-            internalSearchResponse.setPerfTrackerResult(mergedPerfStats.getPerfTrackerResult());
+            InternalSearchResponse internalSearchResponse = new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut,
+                                                            terminatedEarly, numReducePhases);
+            internalSearchResponse.setPerfResults(new PerfResults(phasePerfResults.toArray(new PhasePerfResult[0])));
             return internalSearchResponse;
         }
 //        public void setPerfStats(Map<String,String> perfStats){
 //            this.perfStats = perfStats;
 //        }
-        public void setMergedPerfStats(MergedPerfStats mergedPerfStats){
-            this.mergedPerfStats = mergedPerfStats;
+        public void addPhasePerfResult(List<ShardPerfResult> shardPerfResults, String phaseName){
+            PhasePerfResult phasePerfResult = new PhasePerfResult(shardPerfResults.toArray(new ShardPerfResult[0]),phaseName);
+            this.phasePerfResults.add(phasePerfResult);
         }
 
-        public MergedPerfStats getMergedPerfResults() {
-            return mergedPerfStats;
-        }
+
     }
 
     InternalAggregation.ReduceContextBuilder getReduceContext(SearchRequest request) {

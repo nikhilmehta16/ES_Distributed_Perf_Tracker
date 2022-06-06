@@ -33,8 +33,7 @@ import org.elasticsearch.search.internal.InternalSearchResponse;
 import org.elasticsearch.search.profile.ProfileShardResult;
 import org.elasticsearch.search.profile.SearchProfileShardResults;
 import org.elasticsearch.search.suggest.Suggest;
-import org.spr.utils.PerfTrackerResult;
-import org.spr.utils.performance.PerfTracker;
+import org.spr.utils.results.PerfResults;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -57,11 +56,9 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
     private static final ParseField TOOK = new ParseField("took");
     private static final ParseField TIMED_OUT = new ParseField("timed_out");
 
-    private static final ParseField PERF_STATS = new ParseField("perf_stats");
     private static final ParseField TERMINATED_EARLY = new ParseField("terminated_early");
     private static final ParseField NUM_REDUCE_PHASES = new ParseField("num_reduce_phases");
 
-//    private final PerfTracker.PerfStats perfStats;
 
     private final SearchResponseSections internalResponse;
     private final String scrollId;
@@ -73,7 +70,6 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
     private final Clusters clusters;
     private final long tookInMillis;
 
-    private PerfTrackerResult perfTrackerResult;
 
     public SearchResponse(StreamInput in) throws IOException {
         super(in);
@@ -143,7 +139,7 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
         return internalResponse.hits();
     }
 
-    public PerfTrackerResult getPerfTrackerResult(){return internalResponse.getPerfTrackerResult();}
+    public PerfResults getPerfResults(){return internalResponse.getPerfResults();}
 
     public Aggregations getAggregations() {
         return internalResponse.aggregations();
@@ -270,7 +266,6 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
         }
         builder.field(TOOK.getPreferredName(), tookInMillis);
         builder.field(TIMED_OUT.getPreferredName(), isTimedOut());
-        builder.field(PERF_STATS.getPreferredName(), getPerfTrackerResult().toString());
         if (isTerminatedEarly() != null) {
             builder.field(TERMINATED_EARLY.getPreferredName(), isTerminatedEarly());
         }
