@@ -16,7 +16,7 @@ import org.elasticsearch.search.internal.ShardSearchContextId;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.transport.TransportResponse;
-import org.spr.utils.PerfTrackingResult;
+import org.spr.utils.PerfTrackerResult;
 
 import java.io.IOException;
 
@@ -28,7 +28,7 @@ import java.io.IOException;
  * across search phases to ensure the same point in time snapshot is used for querying and
  * fetching etc.
  */
-public abstract class SearchPhaseResult extends TransportResponse implements PerfTrackingResult {
+public abstract class SearchPhaseResult extends TransportResponse{
 
     private SearchShardTarget searchShardTarget;
     private int shardIndex = -1;
@@ -36,8 +36,16 @@ public abstract class SearchPhaseResult extends TransportResponse implements Per
     private ShardSearchRequest shardSearchRequest;
     private RescoreDocIds rescoreDocIds = RescoreDocIds.EMPTY;
 
-    public String perfStats;
-    public String getPerfStats(){return perfStats;}
+    public PerfTrackerResult perfTrackerResult;
+
+    public PerfTrackerResult getPerfTrackerResult(){
+        return perfTrackerResult;
+    }
+
+    public void setPerfTrackerResult(PerfTrackerResult perfTrackerResult){
+        this.perfTrackerResult = perfTrackerResult;
+    }
+
 
     protected SearchPhaseResult() {
 
@@ -112,8 +120,5 @@ public abstract class SearchPhaseResult extends TransportResponse implements Per
         // TODO: this seems wrong, SearchPhaseResult should have a writeTo?
     }
 
-    @Override
-    public void setPerfStats(String perfStats) {
-        this.perfStats = perfStats;
-    }
+
 }

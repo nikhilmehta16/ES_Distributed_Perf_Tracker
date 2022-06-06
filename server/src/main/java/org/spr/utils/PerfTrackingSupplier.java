@@ -16,32 +16,32 @@ import java.util.function.Supplier;
 
 public class PerfTrackingSupplier<T extends SearchPhaseResult,E extends Exception> implements CheckedSupplier<T, Exception> {
     private PerfTracker.PerfStats perfStats;
+
+    private String phaseName;
     private String shardId;
     private long creationTime;
 
     //when execution starte
     private long executionStartTime;
     private final Supplier<T> supplier;
-    public PerfTrackingSupplier(Supplier<T> supplier, String shardId) throws Exception{
+    public PerfTrackingSupplier(Supplier<T> supplier, String shardId, String phaseName) throws Exception{
         this.supplier = supplier;
         this.creationTime = System.nanoTime();
         this.shardId = shardId;
+        this.phaseName = phaseName;
     }
-
-
-    void supply() {
-
-    }
-
     public T get() throws E{
         executionStartTime = System.nanoTime();
-        this.perfStats =  PerfTracker.start();
+        this.perfStats =  PerfTracker.start(phaseName+shardId);
         PerfTracker.executorDelay(executionStartTime-creationTime);
         PerfTracker.in(shardId);
         T result = this.supplier.get();
         PerfTracker.out(shardId);
-        result.setPerfStats(perfStats.stopAndGetStacked());
+        result.setPerfTrackerResult(new PerfTrackerResult(perfStats.stopAndGetStat().toNestedMap()));
+
         return result;
     }
+
+    void supply(){}
 }
 

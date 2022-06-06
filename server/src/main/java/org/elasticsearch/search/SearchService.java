@@ -400,7 +400,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
-                    },shard.shardId().toString());
+                    },shard.shardId().toString(),"Query");
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -583,29 +583,39 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         final ReaderContext readerContext = findReaderContext(request.contextId(), request);
         final ShardSearchRequest shardSearchRequest = readerContext.getShardSearchRequest(request.getShardSearchRequest());
         final Releasable markAsUsed = readerContext.markAsUsed(getKeepAlive(shardSearchRequest));
-        runAsync(getExecutor(readerContext.indexShard()), () -> {
-            try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false)) {
-                if (request.lastEmittedDoc() != null) {
-                    searchContext.scrollContext().lastEmittedDoc = request.lastEmittedDoc();
-                }
-                searchContext.assignRescoreDocIds(readerContext.getRescoreDocIds(request.getRescoreDocIds()));
-                searchContext.searcher().setAggregatedDfs(readerContext.getAggregatedDfs(request.getAggregatedDfs()));
-                searchContext.docIdsToLoad(request.docIds(), request.docIdsSize());
-                try (SearchOperationListenerExecutor executor =
-                         new SearchOperationListenerExecutor(searchContext, true, System.nanoTime())) {
-                    fetchPhase.execute(searchContext);
-                    if (readerContext.singleSession()) {
-                        freeReaderContext(request.contextId());
+        PerfTrackingSupplier perfTrackingSupplier = null;
+        try {
+            perfTrackingSupplier = new PerfTrackingSupplier(() -> {
+                try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false)) {
+                    if (request.lastEmittedDoc() != null) {
+                        searchContext.scrollContext().lastEmittedDoc = request.lastEmittedDoc();
                     }
-                    executor.success();
+                    searchContext.assignRescoreDocIds(readerContext.getRescoreDocIds(request.getRescoreDocIds()));
+                    searchContext.searcher().setAggregatedDfs(readerContext.getAggregatedDfs(request.getAggregatedDfs()));
+                    searchContext.docIdsToLoad(request.docIds(), request.docIdsSize());
+                    try (SearchOperationListenerExecutor executor =
+                             new SearchOperationListenerExecutor(searchContext, true, System.nanoTime())) {
+                        fetchPhase.execute(searchContext);
+                        if (readerContext.singleSession()) {
+                            freeReaderContext(request.contextId());
+                        }
+                        executor.success();
+                    }
+                    return searchContext.fetchResult();
+                } catch (Exception e) {
+                    assert TransportActions.isShardNotAvailableException(e) == false : new AssertionError(e);
+                    // we handle the failure in the failure listener below
+                    try {
+                        throw e;
+                    } catch (IOException ex) {
+                        throw new RuntimeException(ex);
+                    }
                 }
-                return searchContext.fetchResult();
-            } catch (Exception e) {
-                assert TransportActions.isShardNotAvailableException(e) == false : new AssertionError(e);
-                // we handle the failure in the failure listener below
-                throw e;
-            }
-        }, wrapFailureListener(listener, readerContext, markAsUsed));
+            },readerContext.indexShard().shardId().toString(),"Fetch");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        runAsync(getExecutor(readerContext.indexShard()), perfTrackingSupplier, wrapFailureListener(listener, readerContext, markAsUsed));
     }
 
     private ReaderContext getReaderContext(ShardSearchContextId id) {

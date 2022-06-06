@@ -8,13 +8,20 @@
 
 package org.spr.utils;
 
+import java.util.Map;
 
-import org.spr.utils.performance.PerfTracker;
-//Not used
-public interface PerfTrackingResult {
+public class PerfTrackerResult {
+    private final Map<String,Object> result;
 
-    void setPerfStats(String perfStats);
-    String getPerfStats();
-//    String mergedperfResponse()
+    PerfTrackerResult(Map<String,Object> result){
+        this.result = result;
+    }
+
+    public Map<String,Object> getResult() {
+        return result;
+    }
+
+    public void setResult(){
+    }
 
 }
