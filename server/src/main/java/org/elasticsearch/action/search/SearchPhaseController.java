@@ -47,6 +47,7 @@ import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.search.suggest.Suggest;
 import org.elasticsearch.search.suggest.Suggest.Suggestion;
 import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
+import org.spr.utils.MergedPerfStats;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -294,6 +295,11 @@ public final class SearchPhaseController {
                 assert currentOffset == sortedDocs.length : "expected no more score doc slices";
             }
         }
+        MergedPerfStats mergedPerfStats = reducedQueryPhase.getMergedPerfResults();
+        for(SearchPhaseResult searchPhaseResult: fetchResults){
+            mergedPerfStats.mergeResult(searchPhaseResult.getPerfTrackerResult());
+        }
+
         return reducedQueryPhase.buildResponse(hits);
     }
 
@@ -426,6 +432,7 @@ public final class SearchPhaseController {
             : Collections.emptyMap();
         int from = 0;
         int size = 0;
+        MergedPerfStats mergedPerfStats = new MergedPerfStats();
         DocValueFormat[] sortValueFormats = null;
         for (SearchPhaseResult entry : queryResults) {
             QuerySearchResult result = entry.queryResult();
@@ -435,7 +442,7 @@ public final class SearchPhaseController {
             if (result.sortValueFormats() != null) {
                 sortValueFormats = result.sortValueFormats();
             }
-
+            mergedPerfStats.mergeResult(entry.getPerfTrackerResult());
             if (hasSuggest) {
                 assert result.suggest() != null;
                 for (Suggestion<? extends Suggestion.Entry<? extends Suggestion.Entry.Option>> suggestion : result.suggest()) {
@@ -468,9 +475,11 @@ public final class SearchPhaseController {
         final SearchProfileShardResults shardResults = profileResults.isEmpty() ? null : new SearchProfileShardResults(profileResults);
         final SortedTopDocs sortedTopDocs = sortDocs(isScrollRequest, bufferedTopDocs, from, size, reducedCompletionSuggestions);
         final TotalHits totalHits = topDocsStats.getTotalHits();
-        return new ReducedQueryPhase(totalHits, topDocsStats.fetchHits, topDocsStats.getMaxScore(),
+        ReducedQueryPhase reducedQueryPhase = new ReducedQueryPhase(totalHits, topDocsStats.fetchHits, topDocsStats.getMaxScore(),
             topDocsStats.timedOut, topDocsStats.terminatedEarly, reducedSuggest, aggregations, shardResults, sortedTopDocs,
             sortValueFormats, numReducePhases, size, from, false);
+        reducedQueryPhase.setMergedPerfStats(mergedPerfStats);
+        return reducedQueryPhase;
     }
 
     private static InternalAggregations reduceAggs(InternalAggregation.ReduceContextBuilder aggReduceContextBuilder,
@@ -552,6 +561,10 @@ public final class SearchPhaseController {
         // sort value formats used to sort / format the result
         final DocValueFormat[] sortValueFormats;
 
+//        private Map<String,String> perfStats;
+          private MergedPerfStats mergedPerfStats;
+
+
         ReducedQueryPhase(TotalHits totalHits, long fetchHits, float maxScore, boolean timedOut, Boolean terminatedEarly, Suggest suggest,
                           InternalAggregations aggregations, SearchProfileShardResults shardResults, SortedTopDocs sortedTopDocs,
                           DocValueFormat[] sortValueFormats, int numReducePhases, int size, int from, boolean isEmptyResult) {
@@ -578,8 +591,21 @@ public final class SearchPhaseController {
          * Creates a new search response from the given merged hits.
          * @see #merge(boolean, ReducedQueryPhase, Collection, IntFunction)
          */
+        @SuppressWarnings("checkstyle:LineLength")
         public InternalSearchResponse buildResponse(SearchHits hits) {
-            return new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut, terminatedEarly, numReducePhases);
+            InternalSearchResponse internalSearchResponse = new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut, terminatedEarly, numReducePhases);
+            internalSearchResponse.setPerfTrackerResult(mergedPerfStats.getPerfTrackerResult());
+            return internalSearchResponse;
+        }
+//        public void setPerfStats(Map<String,String> perfStats){
+//            this.perfStats = perfStats;
+//        }
+        public void setMergedPerfStats(MergedPerfStats mergedPerfStats){
+            this.mergedPerfStats = mergedPerfStats;
+        }
+
+        public MergedPerfStats getMergedPerfResults() {
+            return mergedPerfStats;
         }
     }
 
