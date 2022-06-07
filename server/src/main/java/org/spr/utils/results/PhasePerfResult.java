@@ -9,23 +9,33 @@
 package org.spr.utils.results;
 
 import org.elasticsearch.common.xcontent.ToXContentFragment;
-import org.elasticsearch.common.xcontent.ToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.search.SearchPhaseResult;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Collection;
+import java.util.List;
+import java.util.ArrayList;
+
+
 
 public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFragment {
     final String name;
     final ShardPerfResult[]  shardPerfResults;
+    final long maxExecutionDelay;
+    final long maxExecutionTime;
 
-    public PhasePerfResult(ShardPerfResult[] shardPerfResults, String name) {
-        this.name = name;
+    public PhasePerfResult(ShardPerfResult[] shardPerfResults,long maxExecutionDelay, long maxExecutionTime ,String phaseName) {
+        this.name = phaseName;
         this.shardPerfResults = shardPerfResults;
+        this.maxExecutionDelay = maxExecutionDelay;
+        this.maxExecutionTime  = maxExecutionTime;
     }
     public final class Fields {
 //        public final String PHASE = name;
-        public static final String MAX_TIME = "max_time";
+        public static final String MAX_EXECUTION_TIME = "Max Execution Time";
+        public static final String MAX_EXECUTION_DELAY = "Max Execution Delay";
     }
 
     @Override
@@ -36,15 +46,26 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.field(this.name);
-//        builder.startArray();
         builder.startObject();
+        builder.field(Fields.MAX_EXECUTION_TIME,maxExecutionTime);
+        builder.field(Fields.MAX_EXECUTION_DELAY,maxExecutionDelay);
         for(ShardPerfResult shardPerfResult : shardPerfResults){
             shardPerfResult.toXContent(builder,params);
         }
         builder.endObject();
-//        builder.endArray();
         return builder;
     }
 
-
+    public static PhasePerfResult createPhasePerfResult(Collection<? extends SearchPhaseResult> searchPhaseResults, String phaseName){
+        List<ShardPerfResult> shardPerfResults = new ArrayList<>();
+        long maxExecutionDelay = 0;
+        long maxExecutionTime = 0;
+        for(SearchPhaseResult searchPhaseResult: searchPhaseResults){
+            ShardPerfResult shardPerfResult = searchPhaseResult.getShardPerfResult();
+            shardPerfResults.add(shardPerfResult);
+            maxExecutionDelay = Math.max(maxExecutionDelay,shardPerfResult.getExecutionDelay());
+            maxExecutionTime = Math.max(maxExecutionTime,shardPerfResult.getExecutionTime());
+        }
+        return new PhasePerfResult(shardPerfResults.toArray(new ShardPerfResult[0]),maxExecutionDelay,maxExecutionTime,phaseName);
+    }
 }

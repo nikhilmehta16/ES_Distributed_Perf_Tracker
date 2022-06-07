@@ -12,20 +12,23 @@ import org.elasticsearch.common.xcontent.ToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 public class ShardPerfResult implements ToXContentObject {
     private final String perfStatName;
-    private final String tempData;
+    private final long executionTime;
+    private final long executionDelay;
 
 
-    public ShardPerfResult(String tempData, String perfStatName) {
+    public ShardPerfResult(long executionTime,long executionDelay, String perfStatName) {
         this.perfStatName = perfStatName;
-        this.tempData = tempData;
+        this.executionTime = TimeUnit.NANOSECONDS.toMillis(executionTime);
+        this.executionDelay = TimeUnit.NANOSECONDS.toMillis(executionDelay);
     }
 
     public static final class Fields {
-        public static final String DATA = "data";
-        public static final String TOTAL = "total";
+        public static final String EXECUTIONTIME = "executionTime";
+        public static final String EXECUTIONDELAY = "executionDelay";
 
     }
 
@@ -33,7 +36,8 @@ public class ShardPerfResult implements ToXContentObject {
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         builder.field(perfStatName);
         builder.startObject();
-        builder.field("data",this.tempData);
+        builder.field(Fields.EXECUTIONTIME,this.executionTime);
+        builder.field(Fields.EXECUTIONDELAY,this.executionDelay);
         builder.endObject();
         return builder;
     }
@@ -42,5 +46,8 @@ public class ShardPerfResult implements ToXContentObject {
         return perfStatName;
     }
 
+    public long getExecutionTime(){return executionTime;}
+
+    public long getExecutionDelay(){return executionDelay;}
 
 }

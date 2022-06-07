@@ -49,7 +49,6 @@ import org.elasticsearch.search.suggest.Suggest.Suggestion;
 import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
 import org.spr.utils.results.PerfResults;
 import org.spr.utils.results.PhasePerfResult;
-import org.spr.utils.results.ShardPerfResult;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -298,11 +297,7 @@ public final class SearchPhaseController {
             }
         }
 
-        List<ShardPerfResult> shardPerfResults = new ArrayList<>();
-        for(SearchPhaseResult searchPhaseResult: fetchResults){
-            shardPerfResults.add(searchPhaseResult.getShardPerfResult());
-        }
-        reducedQueryPhase.addPhasePerfResult(shardPerfResults, "Fetch_Phase");
+        reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(fetchResults,"Fetch_Phase"));
         return reducedQueryPhase.buildResponse(hits);
     }
 
@@ -435,7 +430,6 @@ public final class SearchPhaseController {
             : Collections.emptyMap();
         int from = 0;
         int size = 0;
-        List<ShardPerfResult> shardPerfResults = new ArrayList<>();
         DocValueFormat[] sortValueFormats = null;
         for (SearchPhaseResult entry : queryResults) {
             QuerySearchResult result = entry.queryResult();
@@ -445,7 +439,6 @@ public final class SearchPhaseController {
             if (result.sortValueFormats() != null) {
                 sortValueFormats = result.sortValueFormats();
             }
-            shardPerfResults.add(entry.getShardPerfResult());
             if (hasSuggest) {
                 assert result.suggest() != null;
                 for (Suggestion<? extends Suggestion.Entry<? extends Suggestion.Entry.Option>> suggestion : result.suggest()) {
@@ -474,6 +467,7 @@ public final class SearchPhaseController {
             reducedSuggest = new Suggest(Suggest.reduce(groupedSuggestions));
             reducedCompletionSuggestions = reducedSuggest.filter(CompletionSuggestion.class);
         }
+
         final InternalAggregations aggregations = reduceAggs(aggReduceContextBuilder, performFinalReduce, bufferedAggs);
         final SearchProfileShardResults shardResults = profileResults.isEmpty() ? null : new SearchProfileShardResults(profileResults);
         final SortedTopDocs sortedTopDocs = sortDocs(isScrollRequest, bufferedTopDocs, from, size, reducedCompletionSuggestions);
@@ -481,7 +475,7 @@ public final class SearchPhaseController {
         ReducedQueryPhase reducedQueryPhase = new ReducedQueryPhase(totalHits, topDocsStats.fetchHits, topDocsStats.getMaxScore(),
             topDocsStats.timedOut, topDocsStats.terminatedEarly, reducedSuggest, aggregations, shardResults, sortedTopDocs,
             sortValueFormats, numReducePhases, size, from, false);
-        reducedQueryPhase.addPhasePerfResult(shardPerfResults,"Query_Phase");
+        reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(queryResults,"Query_Phase"));
         return reducedQueryPhase;
     }
 
@@ -603,8 +597,7 @@ public final class SearchPhaseController {
 //        public void setPerfStats(Map<String,String> perfStats){
 //            this.perfStats = perfStats;
 //        }
-        public void addPhasePerfResult(List<ShardPerfResult> shardPerfResults, String phaseName){
-            PhasePerfResult phasePerfResult = new PhasePerfResult(shardPerfResults.toArray(new ShardPerfResult[0]),phaseName);
+        public void addPhasePerfResult(PhasePerfResult phasePerfResult){
             this.phasePerfResults.add(phasePerfResult);
         }
 
