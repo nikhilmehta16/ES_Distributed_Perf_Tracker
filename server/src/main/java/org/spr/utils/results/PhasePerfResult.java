@@ -26,6 +26,7 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
     final long maxExecutionDelay;
     final long maxExecutionTime;
 
+
     public PhasePerfResult(ShardPerfResult[] shardPerfResults,long maxExecutionDelay, long maxExecutionTime ,String phaseName) {
         this.name = phaseName;
         this.shardPerfResults = shardPerfResults;
@@ -65,6 +66,7 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
             shardPerfResults.add(shardPerfResult);
             maxExecutionDelay = Math.max(maxExecutionDelay,shardPerfResult.getExecutionDelay());
             maxExecutionTime = Math.max(maxExecutionTime,shardPerfResult.getExecutionTime());
+            //merge logic of ShardPerfStats here
         }
         return new PhasePerfResult(shardPerfResults.toArray(new ShardPerfResult[0]),maxExecutionDelay,maxExecutionTime,phaseName);
     }

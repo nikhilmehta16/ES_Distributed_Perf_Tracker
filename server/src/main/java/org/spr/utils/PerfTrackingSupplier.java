@@ -18,17 +18,33 @@ import java.util.function.Supplier;
 public class PerfTrackingSupplier<T extends SearchPhaseResult,E extends Exception> implements CheckedSupplier<T, Exception> {
     private PerfTracker.PerfStats perfStats;
 
-    private String phaseName;
-    private String shardId;
-    private long creationTime;
+    private final String phaseName;
+    private final String shardId;
+    private final long creationTime;
 
+    /**
+     * Various level of PerfStats Verbosity is used
+     * for amount of PerfStats to be sent back to request response
+     */
+    private final int verbosity;
     private long executionStartTime;
     private final Supplier<T> supplier;
+
     public PerfTrackingSupplier(Supplier<T> supplier, String shardId, String phaseName) throws Exception{
+        //If no verbosity is provided, we take it as 0
+        this(supplier,shardId,phaseName,0);
+    }
+
+    public PerfTrackingSupplier(Supplier<T> supplier, String shardId, String phaseName, int indexLevelVerbosity,
+                                int clusterLevelVerbosity) throws Exception{
+       this(supplier,shardId,phaseName,Math.max(indexLevelVerbosity,clusterLevelVerbosity));
+    }
+    public PerfTrackingSupplier(Supplier<T> supplier, String shardId, String phaseName, int verbosity) throws Exception{
         this.supplier = supplier;
         this.creationTime = System.nanoTime();
         this.shardId = shardId;
         this.phaseName = phaseName;
+        this.verbosity = verbosity;
     }
     public T get() throws E{
         executionStartTime = System.nanoTime();
@@ -38,7 +54,7 @@ public class PerfTrackingSupplier<T extends SearchPhaseResult,E extends Exceptio
         T result = this.supplier.get();
         PerfTracker.out(shardId);
         long executionTime = System.nanoTime()-executionStartTime;
-        result.setShardPerfResult(new ShardPerfResult(executionTime,executionDelay,shardId));
+        result.setShardPerfResult(new ShardPerfResult(executionTime,executionDelay,perfStats.stopAndGetStat(),shardId, verbosity));
         return result;
     }
 

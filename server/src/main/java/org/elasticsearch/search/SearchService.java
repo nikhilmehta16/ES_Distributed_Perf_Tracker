@@ -393,6 +393,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                     }
                 }
                 PerfTrackingSupplier perfTrackingSupplier = null;
+
                 try {
                     perfTrackingSupplier = new PerfTrackingSupplier(()-> {
                         try {
@@ -400,7 +401,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
-                    },shard.shardId().toString(),"Query");
+                    },shard.shardId().toString(),"Query", shard.indexSettings().getPerfVerbosity(), indicesService.getPerfVerbosity());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -583,6 +584,8 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         final ReaderContext readerContext = findReaderContext(request.contextId(), request);
         final ShardSearchRequest shardSearchRequest = readerContext.getShardSearchRequest(request.getShardSearchRequest());
         final Releasable markAsUsed = readerContext.markAsUsed(getKeepAlive(shardSearchRequest));
+        int indexPerfVerbosity = getShard(shardSearchRequest).indexSettings().getPerfVerbosity();
+        int clusterPerfVerbosity = indicesService.getPerfVerbosity();
         PerfTrackingSupplier perfTrackingSupplier = null;
         try {
             perfTrackingSupplier = new PerfTrackingSupplier(() -> {
@@ -611,7 +614,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                         throw new RuntimeException(ex);
                     }
                 }
-            },readerContext.indexShard().shardId().toString(),"Fetch");
+            },readerContext.indexShard().shardId().toString(),"Fetch", indexPerfVerbosity, clusterPerfVerbosity);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

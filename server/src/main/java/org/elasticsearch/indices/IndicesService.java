@@ -166,6 +166,7 @@ import static org.elasticsearch.index.IndexService.IndexCreationContext.CREATE_I
 import static org.elasticsearch.index.IndexService.IndexCreationContext.METADATA_VERIFICATION;
 import static org.elasticsearch.index.query.AbstractQueryBuilder.parseInnerQueryBuilder;
 import static org.elasticsearch.search.SearchService.ALLOW_EXPENSIVE_QUERIES;
+import static org.spr.utils.PerfTrackerSettings.CLUSTER_VERBOSITY_LEVEL;
 
 public class IndicesService extends AbstractLifecycleComponent
     implements IndicesClusterStateService.AllocatedIndices<IndexShard, IndexService>, IndexService.ShardStoreDeleter {
@@ -223,6 +224,7 @@ public class IndicesService extends AbstractLifecycleComponent
     private volatile boolean idFieldDataEnabled;
     private volatile boolean allowExpensiveQueries;
 
+    private volatile int perfVerbosity;
     @Nullable
     private final EsThreadPoolExecutor danglingIndicesThreadPoolExecutor;
     private final Set<Index> danglingIndicesToWrite = Sets.newConcurrentHashSet();
@@ -333,6 +335,8 @@ public class IndicesService extends AbstractLifecycleComponent
         this.allowExpensiveQueries = ALLOW_EXPENSIVE_QUERIES.get(clusterService.getSettings());
         clusterService.getClusterSettings().addSettingsUpdateConsumer(ALLOW_EXPENSIVE_QUERIES, this::setAllowExpensiveQueries);
 
+        this.perfVerbosity = CLUSTER_VERBOSITY_LEVEL.get(clusterService.getSettings());
+        clusterService.getClusterSettings().addSettingsUpdateConsumer(CLUSTER_VERBOSITY_LEVEL, this::setPerfVerbosity);
         this.timestampFieldMapperService = new TimestampFieldMapperService(settings, threadPool, this);
     }
 
@@ -1629,6 +1633,13 @@ public class IndicesService extends AbstractLifecycleComponent
         }
     }
 
+    private void setPerfVerbosity(int perfVerbosity){
+        this.perfVerbosity = perfVerbosity;
+    }
+
+    public int getPerfVerbosity(){
+        return this.perfVerbosity;
+    }
     private void setAllowExpensiveQueries(Boolean allowExpensiveQueries) {
         this.allowExpensiveQueries = allowExpensiveQueries;
     }

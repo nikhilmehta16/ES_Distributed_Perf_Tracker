@@ -24,6 +24,7 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
 
     public PerfResults(PhasePerfResult[] phasePerfResults) {
         this.phasePerfResults = phasePerfResults;
+        //merge logic of PerfResults here.
     }
 
     @Override
