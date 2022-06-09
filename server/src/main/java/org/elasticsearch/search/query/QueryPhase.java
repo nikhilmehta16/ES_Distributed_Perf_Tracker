@@ -60,6 +60,7 @@ import org.elasticsearch.search.sort.SortAndFormats;
 import org.elasticsearch.search.suggest.SuggestPhase;
 import org.elasticsearch.tasks.TaskCancelledException;
 import org.elasticsearch.threadpool.ThreadPool;
+import org.spr.utils.performance.PerfTracker;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -140,8 +141,12 @@ public class QueryPhase {
         if (rescore) { // only if we do a regular search
             rescorePhase.execute(searchContext);
         }
+        PerfTracker.in("Suggest Phase");
         suggestPhase.execute(searchContext);
+        PerfTracker.out("Suggest Phase");
+        PerfTracker.in("Aggregation Phase");
         aggregationPhase.execute(searchContext);
+        PerfTracker.out("Aggregation Phase");
 
         if (searchContext.getProfilers() != null) {
             ProfileShardResult shardResults = SearchProfileShardResults
