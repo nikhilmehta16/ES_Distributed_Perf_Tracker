@@ -47,7 +47,6 @@ import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.search.suggest.Suggest;
 import org.elasticsearch.search.suggest.Suggest.Suggestion;
 import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
-import org.spr.utils.results.PerfResults;
 import org.spr.utils.results.PhasePerfResult;
 
 import java.util.ArrayList;
@@ -297,7 +296,6 @@ public final class SearchPhaseController {
             }
         }
 
-        reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(fetchResults,"Fetch_Phase"));
         return reducedQueryPhase.buildResponse(hits);
     }
 
@@ -475,7 +473,7 @@ public final class SearchPhaseController {
         ReducedQueryPhase reducedQueryPhase = new ReducedQueryPhase(totalHits, topDocsStats.fetchHits, topDocsStats.getMaxScore(),
             topDocsStats.timedOut, topDocsStats.terminatedEarly, reducedSuggest, aggregations, shardResults, sortedTopDocs,
             sortValueFormats, numReducePhases, size, from, false);
-        reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(queryResults,"Query_Phase"));
+        reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(queryResults, "Query_Phase"));
         return reducedQueryPhase;
     }
 
@@ -591,7 +589,6 @@ public final class SearchPhaseController {
         public InternalSearchResponse buildResponse(SearchHits hits) {
             InternalSearchResponse internalSearchResponse = new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut,
                                                             terminatedEarly, numReducePhases);
-            internalSearchResponse.setPerfResults(new PerfResults(phasePerfResults.toArray(new PhasePerfResult[0])));
             return internalSearchResponse;
         }
 //        public void setPerfStats(Map<String,String> perfStats){
@@ -601,6 +598,9 @@ public final class SearchPhaseController {
             this.phasePerfResults.add(phasePerfResult);
         }
 
+        public List<PhasePerfResult> getPhasePerfResults(){
+            return phasePerfResults;
+        }
 
     }
 

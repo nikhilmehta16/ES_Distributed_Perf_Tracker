@@ -25,6 +25,8 @@ import org.elasticsearch.search.internal.ShardSearchContextId;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.transport.Transport;
+import org.spr.utils.results.PerfResults;
+import org.spr.utils.results.PhasePerfResult;
 
 import java.util.List;
 import java.util.function.BiFunction;
@@ -216,6 +218,13 @@ final class FetchSearchPhase extends SearchPhase {
                                  AtomicArray<? extends SearchPhaseResult> fetchResultsArr) {
         final InternalSearchResponse internalResponse = searchPhaseController.merge(context.getRequest().scroll() != null,
             reducedQueryPhase, fetchResultsArr.asList(), fetchResultsArr::get);
+        //It means QueryAndFetchOptimization is true
+        if(queryPhaseResults.length()!=1) {
+            reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(fetchResultsArr.asList(), "Fetch_Phase"));
+        }
+        internalResponse.setPerfResults(new PerfResults(reducedQueryPhase.getPhasePerfResults().toArray(new PhasePerfResult[0])));
+
+
         context.executeNextPhase(this, nextPhaseFactory.apply(internalResponse, queryPhaseResults));
     }
 }

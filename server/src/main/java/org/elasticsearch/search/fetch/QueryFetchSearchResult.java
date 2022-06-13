@@ -14,6 +14,7 @@ import org.elasticsearch.search.SearchPhaseResult;
 import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.search.internal.ShardSearchContextId;
 import org.elasticsearch.search.query.QuerySearchResult;
+import org.spr.utils.results.ShardPerfResult;
 
 import java.io.IOException;
 
@@ -26,6 +27,7 @@ public final class QueryFetchSearchResult extends SearchPhaseResult {
         super(in);
         queryResult = new QuerySearchResult(in);
         fetchResult = new FetchSearchResult(in);
+        setShardPerfResult(new ShardPerfResult(in));
     }
 
     public QueryFetchSearchResult(QuerySearchResult queryResult, FetchSearchResult fetchResult) {
@@ -71,5 +73,6 @@ public final class QueryFetchSearchResult extends SearchPhaseResult {
     public void writeTo(StreamOutput out) throws IOException {
         queryResult.writeTo(out);
         fetchResult.writeTo(out);
+        getShardPerfResult().writeTo(out);
     }
 }
