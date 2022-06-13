@@ -69,7 +69,6 @@ public final class QuerySearchResult extends SearchPhaseResult {
 
     public QuerySearchResult(StreamInput in) throws IOException {
         super(in);
-        setShardPerfResult(new ShardPerfResult(in));
         if (in.getVersion().onOrAfter(Version.V_7_7_0)) {
             isNull = in.readBoolean();
         } else {
@@ -346,6 +345,7 @@ public final class QuerySearchResult extends SearchPhaseResult {
         hasProfileResults = profileShardResults != null;
         serviceTimeEWMA = in.readZLong();
         nodeQueueSize = in.readInt();
+        setShardPerfResult(new ShardPerfResult(in));
         if (in.getVersion().onOrAfter(Version.V_7_10_0)) {
             setShardSearchRequest(in.readOptionalWriteable(ShardSearchRequest::new));
             setRescoreDocIds(new RescoreDocIds(in));

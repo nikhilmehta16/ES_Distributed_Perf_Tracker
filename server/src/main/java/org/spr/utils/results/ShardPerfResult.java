@@ -16,6 +16,8 @@ import org.elasticsearch.common.io.stream.Writeable;
 import org.spr.utils.MergedStat;
 import org.spr.utils.performance.PerfTracker;
 
+import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -34,19 +36,25 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
         this.perfStatName = perfStatName;
         this.executionTime = TimeUnit.NANOSECONDS.toMillis(executionTime);
         this.executionDelay = TimeUnit.NANOSECONDS.toMillis(executionDelay);
-        this.stat = stat;
         this.verbosity = verbosity;
+        this.stat = stat;
     }
 
     public static final class Fields {
         public static final String EXECUTIONTIME = "executionTime";
         public static final String EXECUTIONDELAY = "executionDelay";
-
         public static final String PERFSTATS = "perfStats";
     }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+       if(verbosity>2){
+           toInnerXContent(builder,params);
+       }
+       return builder;
+    }
+
+    public XContentBuilder toInnerXContent(XContentBuilder builder, Params params) throws IOException {
         builder.field(perfStatName);
         builder.startObject();
         builder.field(Fields.EXECUTIONTIME, this.executionTime);
@@ -68,6 +76,10 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
         return executionDelay;
     }
 
+    public int getVerbosity(){
+        return verbosity;
+    }
+
     public MergedStat getMergedStat(){
         return stat.getMergedStat(perfStatName);
     }
@@ -77,9 +89,8 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
         executionTime = in.readLong();
         executionDelay = in.readLong();
         verbosity = in.readVInt();
-        ObjectInputStream ois = new ObjectInputStream(in);
         try {
-            stat = (PerfTracker.Stat) ois.readObject();
+            stat = (PerfTracker.Stat) convertFromBytes(in.readByteArray());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -91,8 +102,20 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
         out.writeLong(executionTime);
         out.writeLong(executionDelay);
         out.writeVInt(verbosity);
-        ObjectOutputStream oos = new ObjectOutputStream(out);
-        oos.writeObject(stat);
+        out.writeByteArray(convertToBytes(stat));
 
+    }
+    private byte[] convertToBytes(Object object) throws IOException {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutputStream oos = new ObjectOutputStream(bos)) {
+            oos.writeObject(object);
+            return bos.toByteArray();
+        }
+    }
+    private Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
+        try(ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+            ObjectInputStream oin = new ObjectInputStream(bis)) {
+            return oin.readObject();
+        }
     }
 }

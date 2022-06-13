@@ -16,15 +16,20 @@ import java.util.Iterator;
 
 public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragment {
 
-    final PhasePerfResult[]  phasePerfResults;
-
+    private final PhasePerfResult[]  phasePerfResults;
+    private final int maxPhaseVerbosity;
     public static final class Fields {
         public static final String PERFSTATS = "perf_stats";
     }
 
     public PerfResults(PhasePerfResult[] phasePerfResults) {
         this.phasePerfResults = phasePerfResults;
+        int maxPhaseVerbosity = 0;
         //merge logic of PerfResults here.
+        for(PhasePerfResult phasePerfResult : phasePerfResults){
+            maxPhaseVerbosity = Math.max(maxPhaseVerbosity,phasePerfResult.getMaxShardVerbosity());
+        }
+        this.maxPhaseVerbosity = maxPhaseVerbosity;
     }
 
     @Override
@@ -34,18 +39,21 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
+        if(maxPhaseVerbosity>0) {
+           toInnerXContent(builder,params);
+        }
+        return builder;
+    }
+
+    public XContentBuilder toInnerXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject(PerfResults.Fields.PERFSTATS);
-        for (PhasePerfResult phasePerfResult : phasePerfResults) {
-            phasePerfResult.toXContent(builder, params);
+        if(maxPhaseVerbosity>1) {
+            for (PhasePerfResult phasePerfResult : phasePerfResults) {
+                phasePerfResult.toXContent(builder, params);
+            }
         }
 
         builder.endObject();
         return builder;
     }
-
-
-
-
-
-
 }
