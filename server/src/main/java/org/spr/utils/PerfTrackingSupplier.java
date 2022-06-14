@@ -49,7 +49,7 @@ public class PerfTrackingSupplier<T extends SearchPhaseResult,E extends Exceptio
     public T get() throws E{
         executionStartTime = System.nanoTime();
         long executionDelay = executionStartTime-creationTime;
-        this.perfStats =  PerfTracker.start();
+        this.perfStats =  PerfTracker.start("Shard");
         PerfTracker.executorDelay(executionDelay);
         T result = this.supplier.get();
         long executionTime = System.nanoTime()-executionStartTime;

@@ -41,6 +41,7 @@ import org.elasticsearch.search.fetch.subphase.InnerHitsPhase;
 import org.elasticsearch.search.internal.SearchContext;
 import org.elasticsearch.search.lookup.SourceLookup;
 import org.elasticsearch.tasks.TaskCancelledException;
+import org.spr.utils.performance.PerfTracker;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -109,6 +110,7 @@ public class FetchPhase {
         LeafNestedDocuments leafNestedDocuments = null;
         CheckedBiConsumer<Integer, FieldsVisitor, IOException> fieldReader = null;
         boolean hasSequentialDocs = hasSequentialDocs(docs);
+        PerfTracker.in("Doc Id's Loading");
         for (int index = 0; index < context.docIdsToLoadSize(); index++) {
             if (context.isCancelled()) {
                 throw new TaskCancelledException("cancelled");
@@ -130,9 +132,11 @@ public class FetchPhase {
                     } else {
                         fieldReader = currentReaderContext.reader()::document;
                     }
+                    PerfTracker.in("Setting LeafContextReaders");
                     for (FetchSubPhaseProcessor processor : processors) {
                         processor.setNextReader(currentReaderContext);
                     }
+                    PerfTracker.out("Setting LeafContextReaders");
                     leafNestedDocuments = nestedDocuments.getLeafNestedDocuments(currentReaderContext);
                 }
                 assert currentReaderContext != null;
@@ -145,14 +149,19 @@ public class FetchPhase {
                     storedToRequestedFields,
                     currentReaderContext,
                     fieldReader);
+                PerfTracker.in("Hit Process On FetchSubPhaseProcessor");
                 for (FetchSubPhaseProcessor processor : processors) {
                     processor.process(hit);
                 }
+                PerfTracker.out("Hit Process On FetchSubPhaseProcessor");
+
                 hits[docs[index].index] = hit.hit();
             } catch (Exception e) {
                 throw new FetchPhaseExecutionException(context.shardTarget(), "Error running fetch phase for doc [" + docId + "]", e);
             }
         }
+        PerfTracker.out("Doc Id's Loading");
+
         if (context.isCancelled()) {
             throw new TaskCancelledException("cancelled");
         }
