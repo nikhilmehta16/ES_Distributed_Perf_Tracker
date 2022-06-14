@@ -33,7 +33,7 @@ public final class FetchSearchResult extends SearchPhaseResult {
         super(in);
         contextId = new ShardSearchContextId(in);
         hits = new SearchHits(in);
-        setShardPerfResult(new ShardPerfResult(in));
+        setShardPerfResult(ShardPerfResult.readShardPerfResult(in));
 
     }
 
@@ -81,6 +81,6 @@ public final class FetchSearchResult extends SearchPhaseResult {
     public void writeTo(StreamOutput out) throws IOException {
         contextId.writeTo(out);
         hits.writeTo(out);
-        getShardPerfResult().writeTo(out);
+        ShardPerfResult.writeShardPerfResult(getShardPerfResult(),out);
     }
 }

@@ -27,7 +27,7 @@ public final class QueryFetchSearchResult extends SearchPhaseResult {
         super(in);
         queryResult = new QuerySearchResult(in);
         fetchResult = new FetchSearchResult(in);
-        setShardPerfResult(new ShardPerfResult(in));
+        setShardPerfResult(ShardPerfResult.readShardPerfResult(in));
     }
 
     public QueryFetchSearchResult(QuerySearchResult queryResult, FetchSearchResult fetchResult) {
@@ -73,6 +73,6 @@ public final class QueryFetchSearchResult extends SearchPhaseResult {
     public void writeTo(StreamOutput out) throws IOException {
         queryResult.writeTo(out);
         fetchResult.writeTo(out);
-        getShardPerfResult().writeTo(out);
+        ShardPerfResult.writeShardPerfResult(getShardPerfResult(),out);
     }
 }

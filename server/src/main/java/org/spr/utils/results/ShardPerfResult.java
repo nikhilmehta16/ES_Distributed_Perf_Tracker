@@ -43,7 +43,7 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
     public static final class Fields {
         public static final String EXECUTIONTIME = "executionTime";
         public static final String EXECUTIONDELAY = "executionDelay";
-        public static final String PERFSTATS = "perfStats";
+        public static final String PERFSTATS = "shardPerfStats";
     }
 
     @Override
@@ -104,6 +104,22 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
         out.writeVInt(verbosity);
         out.writeByteArray(convertToBytes(stat));
 
+    }
+
+    public static ShardPerfResult readShardPerfResult(StreamInput in) throws IOException {
+        if(in.readBoolean()==false) {
+            return null;
+        }else{
+            return new ShardPerfResult(in);
+        }
+    }
+    public static void writeShardPerfResult(ShardPerfResult shardPerfResult,StreamOutput out) throws IOException {
+        if(shardPerfResult==null) {
+            out.writeBoolean(false);
+        }else{
+            out.writeBoolean(true);
+            shardPerfResult.writeTo(out);
+        }
     }
     private byte[] convertToBytes(Object object) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
