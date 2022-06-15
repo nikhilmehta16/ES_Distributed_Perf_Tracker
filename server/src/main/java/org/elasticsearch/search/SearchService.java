@@ -395,13 +395,8 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 PerfTrackingSupplier perfTrackingSupplier = null;
 
                 try {
-                    perfTrackingSupplier = new PerfTrackingSupplier(()-> {
-                        try {
-                            return executeQueryPhase(orig, task, keepStatesInContext);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    },shard.shardId().toString(),"Query", shard.indexSettings().getPerfVerbosity(), indicesService.getPerfVerbosity());
+                    perfTrackingSupplier = new PerfTrackingSupplier(()->executeQueryPhase(orig, task, keepStatesInContext),
+                        shard.shardId().toString(),"Query", shard.indexSettings().getPerfVerbosity(), indicesService.getPerfVerbosity());
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -608,11 +603,8 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 } catch (Exception e) {
                     assert TransportActions.isShardNotAvailableException(e) == false : new AssertionError(e);
                     // we handle the failure in the failure listener below
-                    try {
                         throw e;
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
+
                 }
             },readerContext.indexShard().shardId().toString(),"Fetch", indexPerfVerbosity, clusterPerfVerbosity);
         } catch (Exception e) {

@@ -10,32 +10,32 @@ package org.spr.utils.results;
 
 import org.elasticsearch.common.xcontent.ToXContentFragment;
 import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.spr.utils.performance.PerfTracker;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
+import java.util.ArrayList;
 
 public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragment {
 
-    private final PhasePerfResult[]  phasePerfResults;
-    private final int maxPhaseVerbosity;
+    private final List<PhasePerfResult>  phasePerfResults = new ArrayList<>();
+    private int maxPhaseVerbosity;
+    private XContentBuilder builder;
+    private final List<PerfTracker.Stat> perfStats = new ArrayList<>();
+
     public static final class Fields {
         public static final String PERFSTATS = "perf_stats";
     }
 
-    public PerfResults(PhasePerfResult[] phasePerfResults) {
-        this.phasePerfResults = phasePerfResults;
-        int maxPhaseVerbosity = 0;
-        //merge logic of PerfResults here.
+    public PerfResults(List<PhasePerfResult> phasePerfResults) {
         for(PhasePerfResult phasePerfResult : phasePerfResults){
-            maxPhaseVerbosity = Math.max(maxPhaseVerbosity,phasePerfResult.getMaxShardVerbosity());
+            this.addPhasePerfResult(phasePerfResult);
         }
-        this.maxPhaseVerbosity = maxPhaseVerbosity;
     }
 
     @Override
-    public Iterator<PhasePerfResult> iterator() {
-        return null;
-    }
+    public Iterator<PhasePerfResult> iterator() {return phasePerfResults.iterator();}
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
@@ -47,13 +47,27 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
 
     public XContentBuilder toInnerXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject(PerfResults.Fields.PERFSTATS);
+
         if(maxPhaseVerbosity>1) {
-            for (PhasePerfResult phasePerfResult : phasePerfResults) {
+            for(PerfTracker.Stat stat : this.perfStats.toArray(new PerfTracker.Stat[0])){
+                builder.field(stat.getName(),stat.toString());
+            }
+            for (PhasePerfResult phasePerfResult : this.phasePerfResults.toArray(new PhasePerfResult[0])) {
                 phasePerfResult.toXContent(builder, params);
             }
         }
 
         builder.endObject();
         return builder;
+    }
+//    public PerfTracker.Stat getPerfStats(){return this.coordinatorPerfStats;}
+
+    public void addPhasePerfResult(PhasePerfResult phasePerfResult){
+        this.phasePerfResults.add(phasePerfResult);
+        maxPhaseVerbosity = Math.max(maxPhaseVerbosity,phasePerfResult.getMaxShardVerbosity());
+
+    }
+    public void addPerfStats(PerfTracker.Stat stat){
+        this.perfStats.add(stat);
     }
 }
