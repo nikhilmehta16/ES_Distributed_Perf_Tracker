@@ -28,7 +28,7 @@ import java.io.IOException;
  * across search phases to ensure the same point in time snapshot is used for querying and
  * fetching etc.
  */
-public abstract class SearchPhaseResult extends TransportResponse{
+public abstract class SearchPhaseResult extends TransportResponse {
 
     private SearchShardTarget searchShardTarget;
     private int shardIndex = -1;
@@ -120,6 +120,4 @@ public abstract class SearchPhaseResult extends TransportResponse{
     public void writeTo(StreamOutput out) throws IOException {
         // TODO: this seems wrong, SearchPhaseResult should have a writeTo?
     }
-
-
 }

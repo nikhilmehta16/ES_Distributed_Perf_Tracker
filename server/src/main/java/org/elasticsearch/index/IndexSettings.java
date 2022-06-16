@@ -324,7 +324,6 @@ public final class IndexSettings {
     public static final Setting<Boolean> INDEX_SEARCH_THROTTLED = Setting.boolSetting("index.search.throttled", false,
         Property.IndexScope, Property.PrivateIndex, Property.Dynamic);
 
-
     /**
      * Determines a balance between file-based and operations-based peer recoveries. The number of operations that will be used in an
      * operations-based peer recovery is limited to this proportion of the total number of documents in the shard (including deleted

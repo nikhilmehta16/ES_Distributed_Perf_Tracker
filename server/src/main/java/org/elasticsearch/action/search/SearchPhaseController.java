@@ -297,7 +297,6 @@ public final class SearchPhaseController {
                 assert currentOffset == sortedDocs.length : "expected no more score doc slices";
             }
         }
-
         return reducedQueryPhase.buildResponse(hits);
     }
 
@@ -440,6 +439,7 @@ public final class SearchPhaseController {
             if (result.sortValueFormats() != null) {
                 sortValueFormats = result.sortValueFormats();
             }
+
             if (hasSuggest) {
                 assert result.suggest() != null;
                 for (Suggestion<? extends Suggestion.Entry<? extends Suggestion.Entry.Option>> suggestion : result.suggest()) {
@@ -560,8 +560,6 @@ public final class SearchPhaseController {
         final int from;
         // sort value formats used to sort / format the result
         final DocValueFormat[] sortValueFormats;
-
-//        private Map<String,String> perfStats;
         private PerfResults perfResults = new PerfResults(Collections.emptyList());
 
         ReducedQueryPhase(TotalHits totalHits, long fetchHits, float maxScore, boolean timedOut, Boolean terminatedEarly, Suggest suggest,
@@ -595,9 +593,7 @@ public final class SearchPhaseController {
                                                             terminatedEarly, numReducePhases);
             return internalSearchResponse;
         }
-//        public void setPerfStats(Map<String,String> perfStats){
-//            this.perfStats = perfStats;
-//        }
+
         public void addPhasePerfResult(PhasePerfResult phasePerfResult){
             this.perfResults.addPhasePerfResult(phasePerfResult);
         }

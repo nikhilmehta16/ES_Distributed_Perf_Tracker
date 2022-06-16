@@ -30,7 +30,7 @@ import java.util.Map;
  * to parse aggregations into, which are not serializable. This is the common part that can be
  * shared between core and client.
  */
-public class SearchResponseSections implements ToXContentFragment{
+public class SearchResponseSections implements ToXContentFragment {
     protected final SearchHits hits;
     protected final Aggregations aggregations;
     protected final Suggest suggest;
@@ -111,12 +111,9 @@ public class SearchResponseSections implements ToXContentFragment{
         throw new UnsupportedOperationException();
     }
 
-
-
     public void setPerfResults(PerfResults perfResults) {
         this.perfResults = perfResults;
     }
-
 
     public PerfResults getPerfResults() {
         return this.perfResults;
