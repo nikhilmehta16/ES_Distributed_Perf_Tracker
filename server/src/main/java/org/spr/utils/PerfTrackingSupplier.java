@@ -37,7 +37,7 @@ public class PerfTrackingSupplier<T extends SearchPhaseResult,E extends Exceptio
                                 int clusterLevelVerbosity) throws Exception{
        this(supplier,shardId,phaseName,Math.max(indexLevelVerbosity,clusterLevelVerbosity));
     }
-    public PerfTrackingSupplier(CheckedSupplier<T, Exception> supplier, String shardId, String phaseName, int verbosity) throws Exception{
+    public PerfTrackingSupplier(CheckedSupplier<T, Exception> supplier, String shardId, String phaseName, int verbosity) {
         this.supplier = supplier;
         this.creationTime = System.nanoTime();
         this.shardId = shardId;
@@ -57,6 +57,7 @@ public class PerfTrackingSupplier<T extends SearchPhaseResult,E extends Exceptio
         }
         long executionTime = System.nanoTime()-executionStartTime;
         result.setShardPerfResult(new ShardPerfResult(executionTime,executionDelay,perfStats.stopAndGetStat(),shardId, verbosity));
+        PerfTracker.reset();
         return result;
     }
 

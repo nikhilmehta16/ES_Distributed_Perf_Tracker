@@ -479,6 +479,7 @@ public final class SearchPhaseController {
             sortValueFormats, numReducePhases, size, from, false);
         reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(queryResults, "Query_Phase"));
         reducedQueryPhase.getPerfResults().addPerfStats(perfStats.stopAndGetStat());
+        PerfTracker.reset();
         return reducedQueryPhase;
     }
 

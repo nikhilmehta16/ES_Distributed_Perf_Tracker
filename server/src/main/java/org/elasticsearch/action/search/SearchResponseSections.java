@@ -94,7 +94,6 @@ public class SearchResponseSections implements ToXContentFragment {
     @Override
     public final XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
         hits.toXContent(builder, params);
-        perfResults.toXContent(builder,params);
         if (aggregations != null) {
             aggregations.toXContent(builder, params);
         }
@@ -104,6 +103,7 @@ public class SearchResponseSections implements ToXContentFragment {
         if (profileResults != null) {
             profileResults.toXContent(builder, params);
         }
+        perfResults.toXContent(builder,params);
         return builder;
     }
 

@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class MergedStat implements ToXContentObject {
-   private String name;
+   private final String name;
    private int totalCount;
    private long minTimeTaken;
    private long maxTimeTaken;
@@ -22,10 +22,6 @@ public class MergedStat implements ToXContentObject {
 
 
     public static final class Fields {
-        public static final String Name = "name";
-        public static final String EXECUTIONDELAY = "executionDelay";
-
-        public static final String PERFSTATS = "perfStats";
     }
 
 
@@ -80,7 +76,7 @@ public class MergedStat implements ToXContentObject {
    }
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, ToXContent.Params params) throws IOException {
-        builder.field("PerfStats",this.toString());
+        builder.field("MergedPerfStats",this.toString());
         return builder;
     }
 
@@ -111,8 +107,8 @@ public class MergedStat implements ToXContentObject {
             sb.append("  ");
         }
         sb.append(name).append(": ").append(totalCount)
-            .append(" : ").append(TimeUnit.NANOSECONDS.toMillis(minTimeTaken))
-            .append(" : ").append(TimeUnit.NANOSECONDS.toMillis(maxTimeTaken)).append("  Max Name: ").append(maxTimeTakenName);
+//            .append(" : ").append(TimeUnit.NANOSECONDS.toMillis(minTimeTaken))
+            .append(" : ").append(TimeUnit.NANOSECONDS.toMillis(maxTimeTaken)).append(" : ").append(maxTimeTakenName).append('\n');
 
         if (child != null && callStackDepth < MAX_CALL_STACK_DEPTH) {
             child.toStacked(depth + 1, sb, callStackDepth);
