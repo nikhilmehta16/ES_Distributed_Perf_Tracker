@@ -6,15 +6,15 @@
  * Side Public License, v 1.
  */
 
-package org.spr.utils.results;
+package com.spr.utils.results;
 
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.ToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.Writeable;
-import org.spr.utils.MergedStat;
-import org.spr.utils.performance.PerfTracker;
+import com.spr.utils.MergedStat;
+import com.spr.utils.performance.PerfTracker;
 
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;

@@ -1,7 +1,6 @@
+package com.spr.utils;
 
-package org.spr.utils;
-
-
+import com.spr.utils.performance.PerfTracker;
 import org.elasticsearch.common.xcontent.ToXContent;
 import org.elasticsearch.common.xcontent.ToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -36,6 +35,17 @@ public class MergedStat implements ToXContentObject {
    }
 
 
+    public static MergedStat fromStat(String resultName, PerfTracker.Stat stat){
+        MergedStat childMergedStat = null;
+        MergedStat peerMergedStat = null;
+        if (stat.getChild() != null) {
+            childMergedStat = fromStat(resultName, stat.getChild());
+        }
+        if (stat.getPeer() != null) {
+            peerMergedStat = fromStat(resultName, stat.getPeer());
+        }
+        return new MergedStat(stat.getName(), stat.getCount(), stat.getTimeTaken(), resultName, childMergedStat, peerMergedStat);
+    }
 
    public void mergeStat(MergedStat stat){
        if(stat!=null) {

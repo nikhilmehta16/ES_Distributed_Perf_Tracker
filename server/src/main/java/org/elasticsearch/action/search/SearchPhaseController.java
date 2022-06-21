@@ -47,9 +47,9 @@ import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.search.suggest.Suggest;
 import org.elasticsearch.search.suggest.Suggest.Suggestion;
 import org.elasticsearch.search.suggest.completion.CompletionSuggestion;
-import org.spr.utils.performance.PerfTracker;
-import org.spr.utils.results.PerfResults;
-import org.spr.utils.results.PhasePerfResult;
+import com.spr.utils.performance.PerfTracker;
+import com.spr.utils.results.PerfResults;
+import com.spr.utils.results.PhasePerfResult;
 
 import java.util.ArrayList;
 import java.util.Collection;

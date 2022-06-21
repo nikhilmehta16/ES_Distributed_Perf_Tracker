@@ -25,7 +25,7 @@ import org.elasticsearch.search.internal.ShardSearchContextId;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.transport.Transport;
-import org.spr.utils.results.PhasePerfResult;
+import com.spr.utils.results.PhasePerfResult;
 
 import java.util.List;
 import java.util.function.BiFunction;

@@ -64,5 +64,5 @@ testfixtures_shared/
 checkstyle_ide.xml
 
 #PerfTracker Files
-server/src/main/java/org/spr/utils/callee
-server/src/main/java/org/spr/utils/performance
+server/src/main/java/com/spr/utils/callee
+server/src/main/java/com/spr/utils/performance

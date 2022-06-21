@@ -16,7 +16,7 @@ import org.elasticsearch.search.SearchPhaseResult;
 import org.elasticsearch.search.SearchShardTarget;
 import org.elasticsearch.search.internal.ShardSearchContextId;
 import org.elasticsearch.search.query.QuerySearchResult;
-import org.spr.utils.results.ShardPerfResult;
+import com.spr.utils.results.ShardPerfResult;
 
 import java.io.IOException;
 

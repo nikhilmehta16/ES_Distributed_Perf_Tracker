@@ -36,7 +36,7 @@ import static org.elasticsearch.index.mapper.MapperService.INDEX_MAPPING_FIELD_N
 import static org.elasticsearch.index.mapper.MapperService.INDEX_MAPPING_NESTED_DOCS_LIMIT_SETTING;
 import static org.elasticsearch.index.mapper.MapperService.INDEX_MAPPING_NESTED_FIELDS_LIMIT_SETTING;
 import static org.elasticsearch.index.mapper.MapperService.INDEX_MAPPING_TOTAL_FIELDS_LIMIT_SETTING;
-import static org.spr.utils.PerfTrackerSettings.INDEX_VERBOSITY_LEVEL;
+import static com.spr.utils.PerfTrackerSettings.INDEX_VERBOSITY_LEVEL;
 
 /**
  * This class encapsulates all index level settings and handles settings updates.

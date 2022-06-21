@@ -16,7 +16,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.profile.ProfileShardResult;
 import org.elasticsearch.search.profile.SearchProfileShardResults;
 import org.elasticsearch.search.suggest.Suggest;
-import org.spr.utils.results.PerfResults;
+import com.spr.utils.results.PerfResults;
 
 import java.io.IOException;
 import java.util.Collections;

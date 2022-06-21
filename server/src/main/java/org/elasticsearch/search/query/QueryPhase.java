@@ -60,7 +60,7 @@ import org.elasticsearch.search.sort.SortAndFormats;
 import org.elasticsearch.search.suggest.SuggestPhase;
 import org.elasticsearch.tasks.TaskCancelledException;
 import org.elasticsearch.threadpool.ThreadPool;
-import org.spr.utils.performance.PerfTracker;
+import com.spr.utils.performance.PerfTracker;
 
 import java.io.IOException;
 import java.util.ArrayList;

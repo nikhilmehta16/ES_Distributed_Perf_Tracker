@@ -32,7 +32,7 @@ import org.elasticsearch.index.similarity.SimilarityService;
 import org.elasticsearch.index.store.FsDirectoryFactory;
 import org.elasticsearch.index.store.Store;
 import org.elasticsearch.indices.IndicesRequestCache;
-import org.spr.utils.PerfTrackerSettings;
+import com.spr.utils.PerfTrackerSettings;
 
 import java.util.Arrays;
 import java.util.Collections;

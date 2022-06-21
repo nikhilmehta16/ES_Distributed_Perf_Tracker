@@ -1,5 +1,4 @@
-
-package org.spr.utils;
+package com.spr.utils;
 
 import org.elasticsearch.common.settings.Setting;
 

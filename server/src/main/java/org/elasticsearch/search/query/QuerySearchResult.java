@@ -32,7 +32,7 @@ import org.elasticsearch.search.internal.ShardSearchContextId;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.search.profile.ProfileShardResult;
 import org.elasticsearch.search.suggest.Suggest;
-import org.spr.utils.results.ShardPerfResult;
+import com.spr.utils.results.ShardPerfResult;
 
 public final class QuerySearchResult extends SearchPhaseResult {
 

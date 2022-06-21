@@ -166,7 +166,7 @@ import static org.elasticsearch.index.IndexService.IndexCreationContext.CREATE_I
 import static org.elasticsearch.index.IndexService.IndexCreationContext.METADATA_VERIFICATION;
 import static org.elasticsearch.index.query.AbstractQueryBuilder.parseInnerQueryBuilder;
 import static org.elasticsearch.search.SearchService.ALLOW_EXPENSIVE_QUERIES;
-import static org.spr.utils.PerfTrackerSettings.CLUSTER_VERBOSITY_LEVEL;
+import static com.spr.utils.PerfTrackerSettings.CLUSTER_VERBOSITY_LEVEL;
 
 public class IndicesService extends AbstractLifecycleComponent
     implements IndicesClusterStateService.AllocatedIndices<IndexShard, IndexService>, IndexService.ShardStoreDeleter {

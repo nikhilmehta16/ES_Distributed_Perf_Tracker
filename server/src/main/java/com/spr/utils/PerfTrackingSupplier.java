@@ -6,12 +6,12 @@
  * Side Public License, v 1.
  */
 
-package org.spr.utils;
+package com.spr.utils;
 
 import org.elasticsearch.common.CheckedSupplier;
 import org.elasticsearch.search.SearchPhaseResult;
-import org.spr.utils.performance.PerfTracker;
-import org.spr.utils.results.ShardPerfResult;
+import com.spr.utils.performance.PerfTracker;
+import com.spr.utils.results.ShardPerfResult;
 
 public class PerfTrackingSupplier<T extends SearchPhaseResult,E extends Exception> implements CheckedSupplier<T, Exception> {
     private PerfTracker.PerfStats perfStats;

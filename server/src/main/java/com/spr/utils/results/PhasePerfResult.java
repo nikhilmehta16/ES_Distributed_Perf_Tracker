@@ -6,12 +6,12 @@
  * Side Public License, v 1.
  */
 
-package org.spr.utils.results;
+package com.spr.utils.results;
 
 import org.elasticsearch.common.xcontent.ToXContentFragment;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.search.SearchPhaseResult;
-import org.spr.utils.MergedStat;
+import com.spr.utils.MergedStat;
 
 import java.io.IOException;
 import java.util.Iterator;

@@ -114,7 +114,7 @@ import org.elasticsearch.transport.RemoteConnectionStrategy;
 import org.elasticsearch.transport.SniffConnectionStrategy;
 import org.elasticsearch.transport.TransportSettings;
 import org.elasticsearch.watcher.ResourceWatcherService;
-import org.spr.utils.PerfTrackerSettings;
+import com.spr.utils.PerfTrackerSettings;
 
 import java.util.Arrays;
 import java.util.Collections;
