@@ -15,12 +15,11 @@ import org.elasticsearch.search.SearchPhaseResult;
 import com.spr.utils.MergedStat;
 
 import java.io.IOException;
-import java.util.Iterator;
-import java.util.Collection;
-import java.util.List;
 import java.util.ArrayList;
-
-
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFragment {
     private final String name;
@@ -31,8 +30,6 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
     private final int maxShardVerbosity;
     public static final String FETCH_PHASE = "Fetch Phase";
     public static final String QUERY_PHASE = "QUERY Phase";
-
-
 
     public PhasePerfResult(ShardPerfResult[] shardPerfResults,long maxExecutionDelay,
                            long maxExecutionTime, int maxShardVerbosity, MergedStat mergedStat ,String phaseName) {
@@ -50,12 +47,12 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
 
     @Override
     public Iterator<ShardPerfResult> iterator() {
-        return null;
+        return Arrays.stream(shardPerfResults).iterator();
     }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        if(maxShardVerbosity> PerfTrackerSettings.VerbosityLevels.Level_1) {
+        if (maxShardVerbosity > PerfTrackerSettings.VerbosityLevels.Level_1) {
             toInnerXContent(builder,params);
         }
         return builder;
@@ -67,9 +64,9 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         mergedStat.toXContent(builder, params);
         builder.field(Fields.MAX_EXECUTION_TIME, maxExecutionTime);
         builder.field(Fields.MAX_EXECUTION_DELAY, maxExecutionDelay);
-        if(maxShardVerbosity>PerfTrackerSettings.VerbosityLevels.Level_2) {
+        if (maxShardVerbosity > PerfTrackerSettings.VerbosityLevels.Level_2) {
             for (ShardPerfResult shardPerfResult : shardPerfResults) {
-                if(shardPerfResult==null) continue;
+                if (shardPerfResult == null) continue;
                 shardPerfResult.toXContent(builder, params);
             }
         }
@@ -82,15 +79,15 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         long maxExecutionTime = 0;
         int maxShardVerbosity = 0;
         MergedStat mergedStat = null;
-        for(SearchPhaseResult searchPhaseResult: searchPhaseResults){
+        for (SearchPhaseResult searchPhaseResult : searchPhaseResults) {
             ShardPerfResult shardPerfResult = searchPhaseResult.getShardPerfResult();
 
             if(shardPerfResult==null) continue;
 
             shardPerfResults.add(shardPerfResult);
-            maxExecutionDelay = Math.max(maxExecutionDelay,shardPerfResult.getExecutionDelay());
-            maxExecutionTime = Math.max(maxExecutionTime,shardPerfResult.getExecutionTime());
-            maxShardVerbosity = Math.max(maxShardVerbosity,shardPerfResult.getVerbosity());
+            maxExecutionDelay = Math.max(maxExecutionDelay, shardPerfResult.getExecutionDelay());
+            maxExecutionTime = Math.max(maxExecutionTime, shardPerfResult.getExecutionTime());
+            maxShardVerbosity = Math.max(maxShardVerbosity, shardPerfResult.getVerbosity());
             if(mergedStat!=null){
                 //merge with a previous mergedResult
                 mergedStat.mergeStat(shardPerfResult.getMergedStat());
@@ -101,8 +98,8 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
 
         }
 
-        return new PhasePerfResult(shardPerfResults.toArray(new ShardPerfResult[0]),
-                                    maxExecutionDelay,maxExecutionTime, maxShardVerbosity, mergedStat, phaseName);
+        return new PhasePerfResult(shardPerfResults.toArray(new ShardPerfResult[0]), maxExecutionDelay, maxExecutionTime,
+            maxShardVerbosity, mergedStat, phaseName);
     }
     public int getMaxShardVerbosity(){
         return maxShardVerbosity;

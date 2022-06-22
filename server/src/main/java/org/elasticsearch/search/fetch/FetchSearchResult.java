@@ -34,7 +34,6 @@ public final class FetchSearchResult extends SearchPhaseResult {
         contextId = new ShardSearchContextId(in);
         hits = new SearchHits(in);
         setShardPerfResult(ShardPerfResult.readShardPerfResult(in));
-
     }
 
     public FetchSearchResult(ShardSearchContextId id, SearchShardTarget shardTarget) {

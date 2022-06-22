@@ -420,8 +420,7 @@ public final class QuerySearchResult extends SearchPhaseResult {
         out.writeOptionalWriteable(profileShardResults);
         out.writeZLong(serviceTimeEWMA);
         out.writeInt(nodeQueueSize);
-        ShardPerfResult.writeShardPerfResult(getShardPerfResult(),out);
-
+        ShardPerfResult.writeShardPerfResult(getShardPerfResult(), out);
         if (out.getVersion().onOrAfter(Version.V_7_10_0)) {
             out.writeOptionalWriteable(getShardSearchRequest());
             getRescoreDocIds().writeTo(out);

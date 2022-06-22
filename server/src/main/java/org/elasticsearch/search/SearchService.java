@@ -392,9 +392,9 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                         return;
                     }
                 }
+                // fork the execution in the search thread pool
                 runAsync(getExecutor(shard), ()->executeQueryPhase(orig, task, keepStatesInContext), listener, shard.shardId().toString(),
                     shard.indexSettings().getPerfVerbosity(), indicesService.getPerfVerbosity());
-
             }
 
             @Override
@@ -602,7 +602,6 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 assert TransportActions.isShardNotAvailableException(e) == false : new AssertionError(e);
                 // we handle the failure in the failure listener below
                 throw e;
-
             }
         }, wrapFailureListener(listener, readerContext, markAsUsed), shardSearchRequest.shardId().toString(), indexPerfVerbosity,
             clusterPerfVerbosity);

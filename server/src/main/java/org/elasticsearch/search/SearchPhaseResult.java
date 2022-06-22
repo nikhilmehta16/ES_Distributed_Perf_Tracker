@@ -46,8 +46,6 @@ public abstract class SearchPhaseResult extends TransportResponse {
         return shardPerfResult;
     }
 
-
-
     protected SearchPhaseResult() {
 
     }

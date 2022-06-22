@@ -154,7 +154,6 @@ public class FetchPhase {
                     processor.process(hit);
                 }
                 PerfTracker.out("Hit Process On FetchSubPhaseProcessor");
-
                 hits[docs[index].index] = hit.hit();
             } catch (Exception e) {
                 throw new FetchPhaseExecutionException(context.shardTarget(), "Error running fetch phase for doc [" + docId + "]", e);

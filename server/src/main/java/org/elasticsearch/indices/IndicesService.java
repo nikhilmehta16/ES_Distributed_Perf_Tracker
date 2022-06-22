@@ -223,8 +223,8 @@ public class IndicesService extends AbstractLifecycleComponent
     private final CountDownLatch closeLatch = new CountDownLatch(1);
     private volatile boolean idFieldDataEnabled;
     private volatile boolean allowExpensiveQueries;
-
     private volatile int perfVerbosity;
+
     @Nullable
     private final EsThreadPoolExecutor danglingIndicesThreadPoolExecutor;
     private final Set<Index> danglingIndicesToWrite = Sets.newConcurrentHashSet();
@@ -1640,6 +1640,7 @@ public class IndicesService extends AbstractLifecycleComponent
     public int getPerfVerbosity(){
         return this.perfVerbosity;
     }
+
     private void setAllowExpensiveQueries(Boolean allowExpensiveQueries) {
         this.allowExpensiveQueries = allowExpensiveQueries;
     }

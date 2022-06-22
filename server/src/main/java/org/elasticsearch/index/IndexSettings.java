@@ -533,8 +533,6 @@ public final class IndexSettings {
         mappingFieldNameLengthLimit = scopedSettings.get(INDEX_MAPPING_FIELD_NAME_LENGTH_LIMIT_SETTING);
         perfVerbosity = scopedSettings.get(INDEX_VERBOSITY_LEVEL);
 
-        scopedSettings.addSettingsUpdateConsumer(INDEX_VERBOSITY_LEVEL,this::setPerfVerbosity);
-
         scopedSettings.addSettingsUpdateConsumer(MergePolicyConfig.INDEX_COMPOUND_FORMAT_SETTING, mergePolicyConfig::setNoCFSRatio);
         scopedSettings.addSettingsUpdateConsumer(MergePolicyConfig.INDEX_MERGE_POLICY_DELETES_PCT_ALLOWED_SETTING,
             mergePolicyConfig::setDeletesPctAllowed);
@@ -592,6 +590,7 @@ public final class IndexSettings {
         scopedSettings.addSettingsUpdateConsumer(INDEX_MAPPING_TOTAL_FIELDS_LIMIT_SETTING, this::setMappingTotalFieldsLimit);
         scopedSettings.addSettingsUpdateConsumer(INDEX_MAPPING_DEPTH_LIMIT_SETTING, this::setMappingDepthLimit);
         scopedSettings.addSettingsUpdateConsumer(INDEX_MAPPING_FIELD_NAME_LENGTH_LIMIT_SETTING, this::setMappingFieldNameLengthLimit);
+        scopedSettings.addSettingsUpdateConsumer(INDEX_VERBOSITY_LEVEL, this::setPerfVerbosity);
     }
 
     private void setSearchIdleAfter(TimeValue searchIdleAfter) { this.searchIdleAfter = searchIdleAfter; }

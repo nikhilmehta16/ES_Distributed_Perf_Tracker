@@ -590,9 +590,7 @@ public final class SearchPhaseController {
          * @see #merge(boolean, ReducedQueryPhase, Collection, IntFunction)
          */
         public InternalSearchResponse buildResponse(SearchHits hits) {
-            InternalSearchResponse internalSearchResponse = new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut,
-                                                            terminatedEarly, numReducePhases);
-            return internalSearchResponse;
+            return new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut, terminatedEarly, numReducePhases);
         }
 
         public void addPhasePerfResult(PhasePerfResult phasePerfResult){

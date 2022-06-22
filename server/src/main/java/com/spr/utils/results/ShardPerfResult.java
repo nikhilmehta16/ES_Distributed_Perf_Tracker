@@ -51,8 +51,8 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-       if(verbosity> PerfTrackerSettings.VerbosityLevels.Level_2){
-           toInnerXContent(builder,params);
+       if (verbosity > PerfTrackerSettings.VerbosityLevels.Level_2) {
+           toInnerXContent(builder, params);
        }
        return builder;
     }
@@ -91,12 +91,11 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
     @Override
     public void writeTo(StreamOutput out) throws IOException {
         out.writeByteArray(convertToBytes(this));
-
     }
 
-    public static ShardPerfResult readShardPerfResult(StreamInput in){
+    public static ShardPerfResult readShardPerfResult(StreamInput in) {
         try {
-            if(in.readBoolean()==true) {
+            if (in.readBoolean() == true) {
                 return (ShardPerfResult) convertFromBytes(in.readByteArray());
             }
         } catch (Exception e) {
@@ -104,10 +103,10 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
         }
         return null;
     }
-    public static void writeShardPerfResult(ShardPerfResult shardPerfResult,StreamOutput out) throws IOException {
-        if(shardPerfResult==null) {
+    public static void writeShardPerfResult(ShardPerfResult shardPerfResult, StreamOutput out) throws IOException {
+        if (shardPerfResult == null) {
             out.writeBoolean(false);
-        }else{
+        } else {
             out.writeBoolean(true);
             shardPerfResult.writeTo(out);
         }
@@ -120,7 +119,7 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
         }
     }
     private static Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
-        try(ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
             ObjectInputStream oin = new ObjectInputStream(bis)) {
             return oin.readObject();
         }

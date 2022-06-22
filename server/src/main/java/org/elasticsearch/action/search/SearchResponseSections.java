@@ -31,6 +31,7 @@ import java.util.Map;
  * shared between core and client.
  */
 public class SearchResponseSections implements ToXContentFragment {
+
     protected final SearchHits hits;
     protected final Aggregations aggregations;
     protected final Suggest suggest;
@@ -118,6 +119,4 @@ public class SearchResponseSections implements ToXContentFragment {
     public PerfResults getPerfResults() {
         return this.perfResults;
     }
-
-
 }

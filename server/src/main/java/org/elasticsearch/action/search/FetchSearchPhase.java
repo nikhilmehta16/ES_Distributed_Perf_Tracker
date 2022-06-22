@@ -218,7 +218,7 @@ final class FetchSearchPhase extends SearchPhase {
         final InternalSearchResponse internalResponse = searchPhaseController.merge(context.getRequest().scroll() != null,
             reducedQueryPhase, fetchResultsArr.asList(), fetchResultsArr::get);
         //It means QueryAndFetchOptimization is true as there was only one shard in QueryPhase
-        if (queryPhaseResults.length()!=1) {
+        if (queryPhaseResults.length() != 1) {
             reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(fetchResultsArr.asList(),
                 PhasePerfResult.FETCH_PHASE));
         }

@@ -17,10 +17,8 @@ public class MergedStat implements ToXContentObject {
    MergedStat child;
    MergedStat peer;
    private static final int MAX_CALL_STACK_DEPTH = Integer.parseInt(System.getProperty("perf.stat.max.call.stack.depth", "200"));
-
     public static final class Fields {
     }
-
 
    public MergedStat(String name, int count, long timeTaken, String rootName, MergedStat child, MergedStat peer){
        this.name = name;
@@ -31,7 +29,6 @@ public class MergedStat implements ToXContentObject {
        this.child = child;
        this.peer = peer;
    }
-
 
     public static MergedStat fromStat(String resultName, PerfTracker.Stat stat){
         MergedStat childMergedStat = null;
@@ -46,7 +43,7 @@ public class MergedStat implements ToXContentObject {
     }
 
    public void mergeStat(MergedStat stat){
-       if(stat!=null) {
+       if (stat != null) {
            if (name.equals(stat.getName())) {
                minTimeTaken = Math.min(minTimeTaken, stat.getMinTimeTaken());
                totalCount += stat.getTotalCount();
@@ -61,7 +58,7 @@ public class MergedStat implements ToXContentObject {
    }
 
    private void mergeWithPeer(MergedStat stat){
-       if(peer==null) {
+       if (peer == null) {
            peer = stat;
        }else{
            peer.mergeStat(stat);
@@ -69,7 +66,7 @@ public class MergedStat implements ToXContentObject {
    }
 
    private void mergeWithChild(MergedStat stat){
-       if(child==null) {
+       if (child == null) {
            child = stat;
        }else{
            child.mergeStat(stat);
@@ -77,7 +74,7 @@ public class MergedStat implements ToXContentObject {
    }
 
    private void mergeMaxTimeTaken(MergedStat stat){
-       if(maxTimeTaken < stat.getMaxTimeTaken()){
+       if (maxTimeTaken < stat.getMaxTimeTaken()) {
            maxTimeTaken = stat.getMaxTimeTaken();
            maxTimeTakenName = stat.getMaxTimeTakenName();
        }
