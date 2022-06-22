@@ -392,16 +392,9 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                         return;
                     }
                 }
-                PerfTrackingSupplier perfTrackingSupplier = null;
+                runAsync(getExecutor(shard), ()->executeQueryPhase(orig, task, keepStatesInContext), listener, shard.shardId().toString(),
+                    shard.indexSettings().getPerfVerbosity(), indicesService.getPerfVerbosity());
 
-                try {
-                    perfTrackingSupplier = new PerfTrackingSupplier(()->executeQueryPhase(orig, task, keepStatesInContext),
-                        shard.shardId().toString(),"Query", shard.indexSettings().getPerfVerbosity(), indicesService.getPerfVerbosity());
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-
-                runAsync(getExecutor(shard),perfTrackingSupplier, listener);
             }
 
             @Override
@@ -421,6 +414,13 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
 
     private <T> void runAsync(Executor executor, CheckedSupplier<T, Exception> executable, ActionListener<T> listener) {
         executor.execute(ActionRunnable.supply(listener, executable::get));
+    }
+
+    private <T> void runAsync(Executor executor, CheckedSupplier<T, Exception> executable, ActionListener<T> listener, String shardId,
+                              int indexPerfVerbosity, int clusterPerfVerbosity) {
+        PerfTrackingSupplier perfTrackingSupplier = new PerfTrackingSupplier(executable, shardId, indexPerfVerbosity,
+            clusterPerfVerbosity);
+        executor.execute(ActionRunnable.supply(listener, perfTrackingSupplier));
     }
 
     private SearchPhaseResult executeQueryPhase(ShardSearchRequest request,
@@ -581,36 +581,31 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         final Releasable markAsUsed = readerContext.markAsUsed(getKeepAlive(shardSearchRequest));
         int indexPerfVerbosity = getShard(shardSearchRequest).indexSettings().getPerfVerbosity();
         int clusterPerfVerbosity = indicesService.getPerfVerbosity();
-        PerfTrackingSupplier perfTrackingSupplier = null;
-        try {
-            perfTrackingSupplier = new PerfTrackingSupplier(() -> {
-                try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false)) {
-                    if (request.lastEmittedDoc() != null) {
-                        searchContext.scrollContext().lastEmittedDoc = request.lastEmittedDoc();
-                    }
-                    searchContext.assignRescoreDocIds(readerContext.getRescoreDocIds(request.getRescoreDocIds()));
-                    searchContext.searcher().setAggregatedDfs(readerContext.getAggregatedDfs(request.getAggregatedDfs()));
-                    searchContext.docIdsToLoad(request.docIds(), request.docIdsSize());
-                    try (SearchOperationListenerExecutor executor =
-                             new SearchOperationListenerExecutor(searchContext, true, System.nanoTime())) {
-                        fetchPhase.execute(searchContext);
-                        if (readerContext.singleSession()) {
-                            freeReaderContext(request.contextId());
-                        }
-                        executor.success();
-                    }
-                    return searchContext.fetchResult();
-                } catch (Exception e) {
-                    assert TransportActions.isShardNotAvailableException(e) == false : new AssertionError(e);
-                    // we handle the failure in the failure listener below
-                        throw e;
-
+        runAsync(getExecutor(readerContext.indexShard()), () -> {
+            try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false)) {
+                if (request.lastEmittedDoc() != null) {
+                    searchContext.scrollContext().lastEmittedDoc = request.lastEmittedDoc();
                 }
-            },readerContext.indexShard().shardId().toString(),"Fetch", indexPerfVerbosity, clusterPerfVerbosity);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        runAsync(getExecutor(readerContext.indexShard()), perfTrackingSupplier, wrapFailureListener(listener, readerContext, markAsUsed));
+                searchContext.assignRescoreDocIds(readerContext.getRescoreDocIds(request.getRescoreDocIds()));
+                searchContext.searcher().setAggregatedDfs(readerContext.getAggregatedDfs(request.getAggregatedDfs()));
+                searchContext.docIdsToLoad(request.docIds(), request.docIdsSize());
+                try (SearchOperationListenerExecutor executor =
+                         new SearchOperationListenerExecutor(searchContext, true, System.nanoTime())) {
+                    fetchPhase.execute(searchContext);
+                    if (readerContext.singleSession()) {
+                        freeReaderContext(request.contextId());
+                    }
+                    executor.success();
+                }
+                return searchContext.fetchResult();
+            } catch (Exception e) {
+                assert TransportActions.isShardNotAvailableException(e) == false : new AssertionError(e);
+                // we handle the failure in the failure listener below
+                throw e;
+
+            }
+        }, wrapFailureListener(listener, readerContext, markAsUsed), shardSearchRequest.shardId().toString(), indexPerfVerbosity,
+            clusterPerfVerbosity);
     }
 
     private ReaderContext getReaderContext(ShardSearchContextId id) {
