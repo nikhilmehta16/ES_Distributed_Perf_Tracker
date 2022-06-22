@@ -8,6 +8,7 @@
 
 package com.spr.utils.results;
 
+import com.spr.utils.PerfTrackerSettings;
 import org.elasticsearch.common.xcontent.ToXContentFragment;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import com.spr.utils.performance.PerfTracker;
@@ -39,7 +40,7 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        if(maxPhaseVerbosity>0) {
+        if(maxPhaseVerbosity> PerfTrackerSettings.VerbosityLevels.Level_0) {
            toInnerXContent(builder,params);
         }
         return builder;
@@ -48,7 +49,7 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
     public XContentBuilder toInnerXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject(PerfResults.Fields.PERFSTATS);
 
-        if(maxPhaseVerbosity>1) {
+        if(maxPhaseVerbosity>PerfTrackerSettings.VerbosityLevels.Level_1) {
             for(PerfTracker.Stat stat : this.perfStats.toArray(new PerfTracker.Stat[0])){
                 builder.field(stat.getName(),stat.toString());
             }

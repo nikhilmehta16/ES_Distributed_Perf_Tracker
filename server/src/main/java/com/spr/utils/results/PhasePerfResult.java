@@ -8,6 +8,7 @@
 
 package com.spr.utils.results;
 
+import com.spr.utils.PerfTrackerSettings;
 import org.elasticsearch.common.xcontent.ToXContentFragment;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.search.SearchPhaseResult;
@@ -64,7 +65,7 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         mergedStat.toXContent(builder, params);
         builder.field(Fields.MAX_EXECUTION_TIME, maxExecutionTime);
         builder.field(Fields.MAX_EXECUTION_DELAY, maxExecutionDelay);
-        if(maxShardVerbosity>2) {
+        if(maxShardVerbosity>PerfTrackerSettings.VerbosityLevels.Level_2) {
             for (ShardPerfResult shardPerfResult : shardPerfResults) {
                 if(shardPerfResult==null) continue;
                 shardPerfResult.toXContent(builder, params);

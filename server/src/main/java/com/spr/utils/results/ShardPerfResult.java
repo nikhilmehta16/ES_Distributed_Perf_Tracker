@@ -8,6 +8,9 @@
 
 package com.spr.utils.results;
 
+import com.spr.utils.PerfTrackerSettings;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.xcontent.ToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -25,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 
 public class ShardPerfResult implements ToXContentObject,Writeable {
-
+    private static final Logger logger = LogManager.getLogger(ShardPerfResult.class);
     private final String perfStatName;
     private final long executionTime;
     private final long executionDelay;
@@ -48,7 +51,7 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-       if(verbosity>2){
+       if(verbosity> PerfTrackerSettings.VerbosityLevels.Level_2){
            toInnerXContent(builder,params);
        }
        return builder;
