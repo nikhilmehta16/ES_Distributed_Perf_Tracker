@@ -28,8 +28,11 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
     private final long maxExecutionDelay;
     private final long maxExecutionTime;
     private final MergedStat mergedStat;
-
     private final int maxShardVerbosity;
+    public static final String FETCH_PHASE = "Fetch Phase";
+    public static final String QUERY_PHASE = "QUERY Phase";
+
+
 
     public PhasePerfResult(ShardPerfResult[] shardPerfResults,long maxExecutionDelay,
                            long maxExecutionTime, int maxShardVerbosity, MergedStat mergedStat ,String phaseName) {
@@ -41,7 +44,6 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         this.maxShardVerbosity = maxShardVerbosity;
     }
     public static final class Fields {
-//        public final String PHASE = name;
         public static final String MAX_EXECUTION_TIME = "Max Execution Time";
         public static final String MAX_EXECUTION_DELAY = "Max Execution Delay";
     }
@@ -53,7 +55,7 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        if(maxShardVerbosity>1) {
+        if(maxShardVerbosity> PerfTrackerSettings.VerbosityLevels.Level_1) {
             toInnerXContent(builder,params);
         }
         return builder;
@@ -74,7 +76,7 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         builder.endObject();
         return builder;
     }
-    public static PhasePerfResult createPhasePerfResult(Collection<? extends SearchPhaseResult> searchPhaseResults, String phaseName){
+    public static PhasePerfResult createPhasePerfResult(Collection<? extends SearchPhaseResult> searchPhaseResults, String phaseName) {
         List<ShardPerfResult> shardPerfResults = new ArrayList<>();
         long maxExecutionDelay = 0;
         long maxExecutionTime = 0;
@@ -82,7 +84,9 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         MergedStat mergedStat = null;
         for(SearchPhaseResult searchPhaseResult: searchPhaseResults){
             ShardPerfResult shardPerfResult = searchPhaseResult.getShardPerfResult();
+
             if(shardPerfResult==null) continue;
+
             shardPerfResults.add(shardPerfResult);
             maxExecutionDelay = Math.max(maxExecutionDelay,shardPerfResult.getExecutionDelay());
             maxExecutionTime = Math.max(maxExecutionTime,shardPerfResult.getExecutionTime());

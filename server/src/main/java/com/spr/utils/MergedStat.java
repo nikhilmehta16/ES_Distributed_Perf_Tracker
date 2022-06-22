@@ -14,11 +14,9 @@ public class MergedStat implements ToXContentObject {
    private long minTimeTaken;
    private long maxTimeTaken;
    private String maxTimeTakenName;
-//   MergedStats parent;
    MergedStat child;
    MergedStat peer;
    private static final int MAX_CALL_STACK_DEPTH = Integer.parseInt(System.getProperty("perf.stat.max.call.stack.depth", "200"));
-
 
     public static final class Fields {
     }

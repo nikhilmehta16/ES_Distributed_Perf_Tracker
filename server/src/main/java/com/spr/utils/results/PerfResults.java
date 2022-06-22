@@ -36,7 +36,9 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
     }
 
     @Override
-    public Iterator<PhasePerfResult> iterator() {return phasePerfResults.iterator();}
+    public Iterator<PhasePerfResult> iterator() {
+        return phasePerfResults.iterator();
+    }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {

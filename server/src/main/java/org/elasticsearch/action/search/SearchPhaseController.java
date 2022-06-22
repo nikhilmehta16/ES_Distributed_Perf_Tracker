@@ -403,6 +403,7 @@ public final class SearchPhaseController {
                                         TopDocsStats topDocsStats, int numReducePhases, boolean isScrollRequest,
                                         InternalAggregation.ReduceContextBuilder aggReduceContextBuilder,
                                         boolean performFinalReduce) {
+        PerfTracker.reset();
         PerfTracker.PerfStats perfStats = PerfTracker.start();
         assert numReducePhases >= 0 : "num reduce phases must be >= 0 but was: " + numReducePhases;
         numReducePhases++; // increment for this phase
@@ -477,9 +478,8 @@ public final class SearchPhaseController {
         ReducedQueryPhase reducedQueryPhase = new ReducedQueryPhase(totalHits, topDocsStats.fetchHits, topDocsStats.getMaxScore(),
             topDocsStats.timedOut, topDocsStats.terminatedEarly, reducedSuggest, aggregations, shardResults, sortedTopDocs,
             sortValueFormats, numReducePhases, size, from, false);
-        reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(queryResults, "Query_Phase"));
+        reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(queryResults, PhasePerfResult.QUERY_PHASE));
         reducedQueryPhase.getPerfResults().addPerfStats(perfStats.stopAndGetStat());
-        PerfTracker.reset();
         return reducedQueryPhase;
     }
 
