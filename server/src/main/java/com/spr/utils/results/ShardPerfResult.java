@@ -44,8 +44,8 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
     }
 
     public static final class Fields {
-        public static final String EXECUTIONTIME = "executionTime";
-        public static final String EXECUTIONDELAY = "executionDelay";
+        public static final String EXECUTION_TIME = "executionTime";
+        public static final String EXECUTION_DELAY = "executionDelay";
         public static final String PERFSTATS = "shardPerfStats";
     }
 
@@ -60,8 +60,8 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
     public XContentBuilder toInnerXContent(XContentBuilder builder, Params params) throws IOException {
         builder.field(perfStatName);
         builder.startObject();
-        builder.field(Fields.EXECUTIONTIME, this.executionTime);
-        builder.field(Fields.EXECUTIONDELAY, this.executionDelay);
+        builder.field(Fields.EXECUTION_TIME, this.executionTime);
+        builder.field(Fields.EXECUTION_DELAY, this.executionDelay);
         builder.field(Fields.PERFSTATS, this.stat.toString());
         builder.endObject();
         return builder;
@@ -84,37 +84,25 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
     }
 
     public MergedStat getMergedStat(){
-        return stat.getMergedStat(perfStatName);
+        return MergedStat.fromStat(perfStatName,stat);
     }
 
-    public ShardPerfResult(StreamInput in) throws IOException {
-        perfStatName = in.readString();
-        executionTime = in.readLong();
-        executionDelay = in.readLong();
-        verbosity = in.readVInt();
-        try {
-            stat = (PerfTracker.Stat) convertFromBytes(in.readByteArray());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
-        out.writeString(perfStatName);
-        out.writeLong(executionTime);
-        out.writeLong(executionDelay);
-        out.writeVInt(verbosity);
-        out.writeByteArray(convertToBytes(stat));
+        out.writeByteArray(convertToBytes(this));
 
     }
 
-    public static ShardPerfResult readShardPerfResult(StreamInput in) throws IOException {
-        if(in.readBoolean()==false) {
-            return null;
-        }else{
-            return new ShardPerfResult(in);
+    public static ShardPerfResult readShardPerfResult(StreamInput in){
+        try {
+            if(in.readBoolean()==true) {
+                return (ShardPerfResult) convertFromBytes(in.readByteArray());
+            }
+        } catch (Exception e) {
+            logger.warn(e+" Cannot read ShardPerfResult from StreamInput");
         }
+        return null;
     }
     public static void writeShardPerfResult(ShardPerfResult shardPerfResult,StreamOutput out) throws IOException {
         if(shardPerfResult==null) {
@@ -124,14 +112,14 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
             shardPerfResult.writeTo(out);
         }
     }
-    private byte[] convertToBytes(Object object) throws IOException {
+    private static byte[] convertToBytes(Object object) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
             oos.writeObject(object);
             return bos.toByteArray();
         }
     }
-    private Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
+    private static Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
         try(ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
             ObjectInputStream oin = new ObjectInputStream(bis)) {
             return oin.readObject();
