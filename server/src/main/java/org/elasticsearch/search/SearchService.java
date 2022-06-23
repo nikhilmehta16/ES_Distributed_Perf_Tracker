@@ -115,6 +115,7 @@ import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.threadpool.ThreadPool.Names;
 import org.elasticsearch.transport.TransportRequest;
 import com.spr.utils.PerfTrackingSupplier;
+import static com.spr.utils.PerfTrackerSettings.CLUSTER_VERBOSITY_LEVEL;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -206,6 +207,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
 
     private final AtomicInteger openScrollContexts = new AtomicInteger();
     private final String sessionId = UUIDs.randomBase64UUID();
+    private volatile int clusterPerfVerbosity;
 
     public SearchService(ClusterService clusterService, IndicesService indicesService,
                          ThreadPool threadPool, ScriptService scriptService, BigArrays bigArrays, FetchPhase fetchPhase,
@@ -242,6 +244,9 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
 
         lowLevelCancellation = LOW_LEVEL_CANCELLATION_SETTING.get(settings);
         clusterService.getClusterSettings().addSettingsUpdateConsumer(LOW_LEVEL_CANCELLATION_SETTING, this::setLowLevelCancellation);
+
+        clusterPerfVerbosity = CLUSTER_VERBOSITY_LEVEL.get(settings);
+        clusterService.getClusterSettings().addSettingsUpdateConsumer(CLUSTER_VERBOSITY_LEVEL,this::setClusterPerfVerbosity);
     }
 
     private void validateKeepAlives(TimeValue defaultKeepAlive, TimeValue maxKeepAlive) {
@@ -276,6 +281,10 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
 
     private void setLowLevelCancellation(Boolean lowLevelCancellation) {
         this.lowLevelCancellation = lowLevelCancellation;
+    }
+
+    private void setClusterPerfVerbosity(int clusterPerfVerbosity) {
+        this.clusterPerfVerbosity = clusterPerfVerbosity;
     }
 
     @Override
@@ -394,7 +403,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 }
                 // fork the execution in the search thread pool
                 runAsync(getExecutor(shard), ()->executeQueryPhase(orig, task, keepStatesInContext), listener, shard.shardId().toString(),
-                    shard.indexSettings().getPerfVerbosity(), indicesService.getPerfVerbosity());
+                    shard.indexSettings().getPerfVerbosity());
             }
 
             @Override
@@ -417,7 +426,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
     }
 
     private <T> void runAsync(Executor executor, CheckedSupplier<T, Exception> executable, ActionListener<T> listener, String shardId,
-                              int indexPerfVerbosity, int clusterPerfVerbosity) {
+                              int indexPerfVerbosity) {
         PerfTrackingSupplier perfTrackingSupplier = new PerfTrackingSupplier(executable, shardId, indexPerfVerbosity,
             clusterPerfVerbosity);
         executor.execute(ActionRunnable.supply(listener, perfTrackingSupplier));
@@ -580,7 +589,6 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         final ShardSearchRequest shardSearchRequest = readerContext.getShardSearchRequest(request.getShardSearchRequest());
         final Releasable markAsUsed = readerContext.markAsUsed(getKeepAlive(shardSearchRequest));
         int indexPerfVerbosity = getShard(shardSearchRequest).indexSettings().getPerfVerbosity();
-        int clusterPerfVerbosity = indicesService.getPerfVerbosity();
         runAsync(getExecutor(readerContext.indexShard()), () -> {
             try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false)) {
                 if (request.lastEmittedDoc() != null) {
@@ -603,8 +611,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 // we handle the failure in the failure listener below
                 throw e;
             }
-        }, wrapFailureListener(listener, readerContext, markAsUsed), shardSearchRequest.shardId().toString(), indexPerfVerbosity,
-            clusterPerfVerbosity);
+        }, wrapFailureListener(listener, readerContext, markAsUsed), shardSearchRequest.shardId().toString(), indexPerfVerbosity);
     }
 
     private ReaderContext getReaderContext(ShardSearchContextId id) {
