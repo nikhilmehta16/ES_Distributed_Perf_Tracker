@@ -110,7 +110,7 @@ public class FetchPhase {
         LeafNestedDocuments leafNestedDocuments = null;
         CheckedBiConsumer<Integer, FieldsVisitor, IOException> fieldReader = null;
         boolean hasSequentialDocs = hasSequentialDocs(docs);
-        PerfTracker.in("Doc Id's Loading");
+        PerfTracker.in("load.docIds");
         for (int index = 0; index < context.docIdsToLoadSize(); index++) {
             if (context.isCancelled()) {
                 throw new TaskCancelledException("cancelled");
@@ -132,11 +132,11 @@ public class FetchPhase {
                     } else {
                         fieldReader = currentReaderContext.reader()::document;
                     }
-                    PerfTracker.in("Setting LeafContextReaders");
+                    PerfTracker.in("set.nextReader");
                     for (FetchSubPhaseProcessor processor : processors) {
                         processor.setNextReader(currentReaderContext);
                     }
-                    PerfTracker.out("Setting LeafContextReaders");
+                    PerfTracker.out("set.nextReader");
                     leafNestedDocuments = nestedDocuments.getLeafNestedDocuments(currentReaderContext);
                 }
                 assert currentReaderContext != null;
@@ -149,17 +149,17 @@ public class FetchPhase {
                     storedToRequestedFields,
                     currentReaderContext,
                     fieldReader);
-                PerfTracker.in("Hit Process On FetchSubPhaseProcessor");
+                PerfTracker.in("process.hit");
                 for (FetchSubPhaseProcessor processor : processors) {
                     processor.process(hit);
                 }
-                PerfTracker.out("Hit Process On FetchSubPhaseProcessor");
+                PerfTracker.out("process.hit");
                 hits[docs[index].index] = hit.hit();
             } catch (Exception e) {
                 throw new FetchPhaseExecutionException(context.shardTarget(), "Error running fetch phase for doc [" + docId + "]", e);
             }
         }
-        PerfTracker.out("Doc Id's Loading");
+        PerfTracker.out("load.docIds");
 
         if (context.isCancelled()) {
             throw new TaskCancelledException("cancelled");

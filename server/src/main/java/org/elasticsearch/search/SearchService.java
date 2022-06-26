@@ -9,6 +9,7 @@
 
 package org.elasticsearch.search;
 
+import com.spr.utils.performance.PerfTracker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.search.FieldDoc;
@@ -440,10 +441,12 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 SearchContext context = createContext(readerContext, request, task, true)) {
             final long afterQueryTime;
             try (SearchOperationListenerExecutor executor = new SearchOperationListenerExecutor(context)) {
+                PerfTracker.in("queryPhase.execute");
                 loadOrExecuteQueryPhase(request, context);
                 if (context.queryResult().hasSearchContext() == false && readerContext.singleSession()) {
                     freeReaderContext(readerContext.id());
                 }
+                PerfTracker.out("queryPhase.execute");
                 afterQueryTime = executor.success();
             }
             if (request.numberOfShards() == 1) {

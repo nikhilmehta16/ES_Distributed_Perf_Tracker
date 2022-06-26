@@ -240,7 +240,7 @@ public final class InternalAggregations extends Aggregations implements Writeabl
         // now we can use the first aggregation of each list to handle the reduce of its list
         List<InternalAggregation> reducedAggregations = new ArrayList<>();
         for (Map.Entry<String, List<InternalAggregation>> entry : aggByName.entrySet()) {
-            PerfTracker.in("Aggregating "+entry.getKey());
+            PerfTracker.in("aggs "+entry.getKey());
             List<InternalAggregation> aggregations = entry.getValue();
             // Sort aggregations so that unmapped aggs come last in the list
             // If all aggs are unmapped, the agg that leads the reduction will just return itself
@@ -252,7 +252,7 @@ public final class InternalAggregations extends Aggregations implements Writeabl
                 // no need for reduce phase
                 reducedAggregations.add(first);
             }
-            PerfTracker.out("Aggregating "+entry.getKey());
+            PerfTracker.out("aggs "+entry.getKey());
 
         }
 

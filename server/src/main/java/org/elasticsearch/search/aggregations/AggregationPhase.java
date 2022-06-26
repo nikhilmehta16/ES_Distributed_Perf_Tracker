@@ -7,6 +7,7 @@
  */
 package org.elasticsearch.search.aggregations;
 
+import com.spr.utils.performance.PerfTracker;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Query;
 import org.elasticsearch.common.inject.Inject;
@@ -80,6 +81,7 @@ public class AggregationPhase {
 
         // optimize the global collector based execution
         if (!globals.isEmpty()) {
+            PerfTracker.in("globalAggs.optimize");
             BucketCollector globalsCollector = MultiBucketCollector.wrap(globals);
             Query query = context.buildFilteredQuery(Queries.newMatchAllQuery());
 
@@ -100,6 +102,8 @@ public class AggregationPhase {
                 context.searcher().search(query, collector);
             } catch (Exception e) {
                 throw new QueryPhaseExecutionException(context.shardTarget(), "Failed to execute global aggregators", e);
+            }finally {
+                PerfTracker.out("globalAggs.optimize");
             }
         }
 

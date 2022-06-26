@@ -29,7 +29,7 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
     private final MergedStat mergedStat;
     private final int maxShardVerbosity;
     public static final String FETCH_PHASE = "Fetch Phase";
-    public static final String QUERY_PHASE = "QUERY Phase";
+    public static final String QUERY_PHASE = "Query Phase";
 
     public PhasePerfResult(ShardPerfResult[] shardPerfResults,long maxExecutionDelay,
                            long maxExecutionTime, int maxShardVerbosity, MergedStat mergedStat ,String phaseName) {

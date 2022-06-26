@@ -404,7 +404,7 @@ public final class SearchPhaseController {
                                         InternalAggregation.ReduceContextBuilder aggReduceContextBuilder,
                                         boolean performFinalReduce) {
         PerfTracker.reset();
-        PerfTracker.PerfStats perfStats = PerfTracker.start();
+        PerfTracker.PerfStats perfStats = PerfTracker.start("ReducedQueryPhase");
         assert numReducePhases >= 0 : "num reduce phases must be >= 0 but was: " + numReducePhases;
         numReducePhases++; // increment for this phase
         if (queryResults.isEmpty()) { // early terminate we have nothing to reduce
@@ -469,9 +469,9 @@ public final class SearchPhaseController {
             reducedSuggest = new Suggest(Suggest.reduce(groupedSuggestions));
             reducedCompletionSuggestions = reducedSuggest.filter(CompletionSuggestion.class);
         }
-        PerfTracker.in("Reducing Aggregations");
+        PerfTracker.in("aggs.reduce");
         final InternalAggregations aggregations = reduceAggs(aggReduceContextBuilder, performFinalReduce, bufferedAggs);
-        PerfTracker.out("Reducing Aggregations");
+        PerfTracker.out("aggs.reduce");
         final SearchProfileShardResults shardResults = profileResults.isEmpty() ? null : new SearchProfileShardResults(profileResults);
         final SortedTopDocs sortedTopDocs = sortDocs(isScrollRequest, bufferedTopDocs, from, size, reducedCompletionSuggestions);
         final TotalHits totalHits = topDocsStats.getTotalHits();
@@ -479,7 +479,7 @@ public final class SearchPhaseController {
             topDocsStats.timedOut, topDocsStats.terminatedEarly, reducedSuggest, aggregations, shardResults, sortedTopDocs,
             sortValueFormats, numReducePhases, size, from, false);
         reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(queryResults, PhasePerfResult.QUERY_PHASE));
-        reducedQueryPhase.getPerfResults().addPerfStats(perfStats.stopAndGetStat());
+        reducedQueryPhase.getPerfResults().addPerfStats("ReducedQueryPhase",perfStats.stopAndGetStat());
         return reducedQueryPhase;
     }
 

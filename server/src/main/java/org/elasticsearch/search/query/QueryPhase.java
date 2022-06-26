@@ -121,7 +121,9 @@ public class QueryPhase {
 
     public void execute(SearchContext searchContext) throws QueryPhaseExecutionException {
         if (searchContext.hasOnlySuggest()) {
+            PerfTracker.in("query.suggestions");
             suggestPhase.execute(searchContext);
+            PerfTracker.out("query.suggestions");
             searchContext.queryResult().topDocs(new TopDocsAndMaxScore(
                     new TopDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), Lucene.EMPTY_SCORE_DOCS), Float.NaN),
                 new DocValueFormat[0]);
@@ -135,18 +137,20 @@ public class QueryPhase {
         // Pre-process aggregations as late as possible. In the case of a DFS_Q_T_F
         // request, preProcess is called on the DFS phase phase, this is why we pre-process them
         // here to make sure it happens during the QUERY phase
+        PerfTracker.in("aggs.preProcess");
         aggregationPhase.preProcess(searchContext);
+        PerfTracker.out("aggs.preProcess");
         boolean rescore = executeInternal(searchContext);
 
         if (rescore) { // only if we do a regular search
             rescorePhase.execute(searchContext);
         }
-        PerfTracker.in("Suggest Phase");
+        PerfTracker.in("query.suggestions");
         suggestPhase.execute(searchContext);
-        PerfTracker.out("Suggest Phase");
-        PerfTracker.in("Aggregation Phase");
+        PerfTracker.out("query.suggestions");
+        PerfTracker.in("query.aggs");
         aggregationPhase.execute(searchContext);
-        PerfTracker.out("Aggregation Phase");
+        PerfTracker.out("query.aggs");
 
         if (searchContext.getProfilers() != null) {
             ProfileShardResult shardResults = SearchProfileShardResults

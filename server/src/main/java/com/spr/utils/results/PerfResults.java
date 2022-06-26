@@ -17,12 +17,13 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragment {
     private final List<PhasePerfResult>  phasePerfResults = new ArrayList<>();
     private int maxPhaseVerbosity;
-    private XContentBuilder builder;
-    private final List<PerfTracker.Stat> perfStats = new ArrayList<>();
+    private final HashMap<String, PerfTracker.Stat> perfStatsMap = new HashMap<>();
 
     public static final class Fields {
         public static final String PERFSTATS = "perf_stats";
@@ -51,8 +52,8 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
         builder.startObject(PerfResults.Fields.PERFSTATS);
 
         if (maxPhaseVerbosity > PerfTrackerSettings.VerbosityLevels.Level_1) {
-            for (PerfTracker.Stat stat : this.perfStats.toArray(new PerfTracker.Stat[0])) {
-                builder.field(stat.getName(),stat.toString());
+            for (Map.Entry<String, PerfTracker.Stat> entry : perfStatsMap.entrySet()) {
+                builder.field(entry.getKey(), entry.getValue().toString());
             }
             for (PhasePerfResult phasePerfResult : this.phasePerfResults.toArray(new PhasePerfResult[0])) {
                 phasePerfResult.toXContent(builder, params);
@@ -64,12 +65,12 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
     }
 //    public PerfTracker.Stat getPerfStats(){return this.coordinatorPerfStats;}
 
-    public void addPhasePerfResult(PhasePerfResult phasePerfResult){
+    public void addPhasePerfResult(PhasePerfResult phasePerfResult) {
         this.phasePerfResults.add(phasePerfResult);
         maxPhaseVerbosity = Math.max(maxPhaseVerbosity, phasePerfResult.getMaxShardVerbosity());
-
     }
-    public void addPerfStats(PerfTracker.Stat stat){
-        this.perfStats.add(stat);
+
+    public void addPerfStats(String name, PerfTracker.Stat stat) {
+        this.perfStatsMap.put(name,stat);
     }
 }
