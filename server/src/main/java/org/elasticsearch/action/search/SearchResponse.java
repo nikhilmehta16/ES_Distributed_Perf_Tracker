@@ -135,7 +135,9 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
         return internalResponse.hits();
     }
 
-    public PerfResults getPerfResults(){return internalResponse.getPerfResults();}
+    public PerfResults getPerfResults() {
+        return internalResponse.getPerfResults();
+    }
 
     public Aggregations getAggregations() {
         return internalResponse.aggregations();

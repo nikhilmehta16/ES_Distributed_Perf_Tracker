@@ -1,11 +1,3 @@
-/*
- * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
- * or more contributor license agreements. Licensed under the Elastic License
- * 2.0 and the Server Side Public License, v 1; you may not use this file except
- * in compliance with, at your election, the Elastic License 2.0 or the Server
- * Side Public License, v 1.
- */
-
 package com.spr.utils.results;
 
 import com.spr.utils.PerfTrackerSettings;
@@ -16,23 +8,22 @@ import com.spr.utils.MergedStat;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 
-public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFragment {
+public class PhasePerfResult implements ToXContentFragment {
     private final String name;
-    private final ShardPerfResult[]  shardPerfResults;
+    private final ShardPerfResult[] shardPerfResults;
     private final long maxExecutionDelay;
     private final long maxExecutionTime;
     private final MergedStat mergedStat;
     private final int maxShardVerbosity;
     public static final String FETCH_PHASE = "Fetch Phase";
     public static final String QUERY_PHASE = "Query Phase";
+    public static final String DFS_PHASE = "DFS Phase";
 
-    public PhasePerfResult(ShardPerfResult[] shardPerfResults,long maxExecutionDelay,
-                           long maxExecutionTime, int maxShardVerbosity, MergedStat mergedStat ,String phaseName) {
+    private PhasePerfResult(ShardPerfResult[] shardPerfResults, long maxExecutionDelay,
+                            long maxExecutionTime, int maxShardVerbosity, MergedStat mergedStat ,String phaseName) {
         this.name = phaseName;
         this.shardPerfResults = shardPerfResults;
         this.maxExecutionDelay = maxExecutionDelay;
@@ -40,19 +31,15 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         this.mergedStat = mergedStat;
         this.maxShardVerbosity = maxShardVerbosity;
     }
+
     public static final class Fields {
         public static final String MAX_EXECUTION_TIME = "Max Execution Time";
         public static final String MAX_EXECUTION_DELAY = "Max Execution Delay";
     }
 
     @Override
-    public Iterator<ShardPerfResult> iterator() {
-        return Arrays.stream(shardPerfResults).iterator();
-    }
-
-    @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        if (maxShardVerbosity > PerfTrackerSettings.VerbosityLevels.Level_1) {
+        if (maxShardVerbosity > PerfTrackerSettings.VerbosityLevels.LEVEL_1) {
             toInnerXContent(builder,params);
         }
         return builder;
@@ -64,15 +51,18 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         mergedStat.toXContent(builder, params);
         builder.field(Fields.MAX_EXECUTION_TIME, maxExecutionTime);
         builder.field(Fields.MAX_EXECUTION_DELAY, maxExecutionDelay);
-        if (maxShardVerbosity > PerfTrackerSettings.VerbosityLevels.Level_2) {
+        if (maxShardVerbosity > PerfTrackerSettings.VerbosityLevels.LEVEL_2) {
             for (ShardPerfResult shardPerfResult : shardPerfResults) {
-                if (shardPerfResult == null) continue;
+                if (shardPerfResult == null) {
+                    continue;
+                }
                 shardPerfResult.toXContent(builder, params);
             }
         }
         builder.endObject();
         return builder;
     }
+
     public static PhasePerfResult createPhasePerfResult(Collection<? extends SearchPhaseResult> searchPhaseResults, String phaseName) {
         List<ShardPerfResult> shardPerfResults = new ArrayList<>();
         long maxExecutionDelay = 0;
@@ -81,17 +71,18 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         MergedStat mergedStat = null;
         for (SearchPhaseResult searchPhaseResult : searchPhaseResults) {
             ShardPerfResult shardPerfResult = searchPhaseResult.getShardPerfResult();
-
-            if(shardPerfResult==null) continue;
+            if (shardPerfResult == null) {
+                continue;
+            }
 
             shardPerfResults.add(shardPerfResult);
             maxExecutionDelay = Math.max(maxExecutionDelay, shardPerfResult.getExecutionDelay());
             maxExecutionTime = Math.max(maxExecutionTime, shardPerfResult.getExecutionTime());
             maxShardVerbosity = Math.max(maxShardVerbosity, shardPerfResult.getVerbosity());
-            if(mergedStat!=null){
+            if (mergedStat != null) {
                 //merge with a previous mergedResult
                 mergedStat.mergeStat(shardPerfResult.getMergedStat());
-            }else{
+            } else {
                 //If no previous exists we create a new mergedResult and use it for subsequent ones.
                 mergedStat = shardPerfResult.getMergedStat();
             }
@@ -101,7 +92,8 @@ public class PhasePerfResult implements  Iterable<ShardPerfResult>, ToXContentFr
         return new PhasePerfResult(shardPerfResults.toArray(new ShardPerfResult[0]), maxExecutionDelay, maxExecutionTime,
             maxShardVerbosity, mergedStat, phaseName);
     }
-    public int getMaxShardVerbosity(){
+
+    public int getMaxShardVerbosity() {
         return maxShardVerbosity;
     }
 }

@@ -39,7 +39,7 @@ public class SearchResponseSections implements ToXContentFragment {
     protected final boolean timedOut;
     protected final Boolean terminatedEarly;
     protected final int numReducePhases;
-    protected PerfResults perfResults = new PerfResults(Collections.emptyList());
+    protected PerfResults perfResults;
 
     public SearchResponseSections(SearchHits hits, Aggregations aggregations, Suggest suggest, boolean timedOut, Boolean terminatedEarly,
                                   SearchProfileShardResults profileResults,  int numReducePhases) {
@@ -104,7 +104,9 @@ public class SearchResponseSections implements ToXContentFragment {
         if (profileResults != null) {
             profileResults.toXContent(builder, params);
         }
-        perfResults.toXContent(builder,params);
+        if (perfResults != null) {
+            perfResults.toXContent(builder, params);
+        }
         return builder;
     }
 

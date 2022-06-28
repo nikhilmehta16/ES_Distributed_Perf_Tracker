@@ -27,13 +27,16 @@ import java.io.ObjectOutputStream;
 import java.util.concurrent.TimeUnit;
 
 
-public class ShardPerfResult implements ToXContentObject,Writeable {
+public class ShardPerfResult implements ToXContentObject, Writeable {
+
     private static final Logger logger = LogManager.getLogger(ShardPerfResult.class);
+
     private final String perfStatName;
     private final long executionTime;
     private final long executionDelay;
     private final int verbosity;
     private final PerfTracker.Stat stat;
+    private MergedStat mergedStat;
 
     public ShardPerfResult(long executionTime, long executionDelay, PerfTracker.Stat stat, String perfStatName, int verbosity) {
         this.perfStatName = perfStatName;
@@ -51,18 +54,20 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-       if (verbosity > PerfTrackerSettings.VerbosityLevels.Level_2) {
-           toInnerXContent(builder, params);
+       if (verbosity > PerfTrackerSettings.VerbosityLevels.LEVEL_2) {
+           toInnerXContent(builder);
        }
        return builder;
     }
 
-    public XContentBuilder toInnerXContent(XContentBuilder builder, Params params) throws IOException {
+    public XContentBuilder toInnerXContent(XContentBuilder builder) throws IOException {
         builder.field(perfStatName);
         builder.startObject();
         builder.field(Fields.EXECUTION_TIME, this.executionTime);
         builder.field(Fields.EXECUTION_DELAY, this.executionDelay);
-        builder.field(Fields.PERFSTATS, this.stat.toString());
+        if (this.stat != null) {
+            builder.field(Fields.PERFSTATS, this.stat.toString());
+        }
         builder.endObject();
         return builder;
     }
@@ -83,10 +88,13 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
         return verbosity;
     }
 
-    public MergedStat getMergedStat(){
-        return MergedStat.fromStat(perfStatName,stat);
+    public MergedStat getMergedStat() {
+        if (mergedStat != null) {
+            return mergedStat;
+        }
+        mergedStat = MergedStat.fromStat(perfStatName, stat);
+        return mergedStat;
     }
-
 
     @Override
     public void writeTo(StreamOutput out) throws IOException {
@@ -99,10 +107,11 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
                 return (ShardPerfResult) convertFromBytes(in.readByteArray());
             }
         } catch (Exception e) {
-            logger.warn(e+" Cannot read ShardPerfResult from StreamInput");
+            logger.error("Cannot read ShardPerfResult from StreamInput", e);
         }
         return null;
     }
+
     public static void writeShardPerfResult(ShardPerfResult shardPerfResult, StreamOutput out) throws IOException {
         if (shardPerfResult == null) {
             out.writeBoolean(false);
@@ -111,6 +120,7 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
             shardPerfResult.writeTo(out);
         }
     }
+
     private static byte[] convertToBytes(Object object) throws IOException {
         try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
              ObjectOutputStream oos = new ObjectOutputStream(bos)) {
@@ -118,6 +128,7 @@ public class ShardPerfResult implements ToXContentObject,Writeable {
             return bos.toByteArray();
         }
     }
+
     private static Object convertFromBytes(byte[] bytes) throws IOException, ClassNotFoundException {
         try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
             ObjectInputStream oin = new ObjectInputStream(bis)) {

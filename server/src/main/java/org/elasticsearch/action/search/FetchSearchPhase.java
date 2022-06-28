@@ -217,12 +217,16 @@ final class FetchSearchPhase extends SearchPhase {
                                  AtomicArray<? extends SearchPhaseResult> fetchResultsArr) {
         final InternalSearchResponse internalResponse = searchPhaseController.merge(context.getRequest().scroll() != null,
             reducedQueryPhase, fetchResultsArr.asList(), fetchResultsArr::get);
+        addPerfResults(internalResponse, reducedQueryPhase, queryPhaseResults, fetchResultsArr.asList());
+        context.executeNextPhase(this, nextPhaseFactory.apply(internalResponse, queryPhaseResults));
+    }
+
+    private void addPerfResults(InternalSearchResponse internalResponse, SearchPhaseController.ReducedQueryPhase reducedQueryPhase,
+                                AtomicArray<SearchPhaseResult> queryPhaseResults, List<? extends SearchPhaseResult> fetchResultsList) {
         //It means QueryAndFetchOptimization is true as there was only one shard in QueryPhase
         if (queryPhaseResults.length() != 1) {
-            reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(fetchResultsArr.asList(),
-                PhasePerfResult.FETCH_PHASE));
+            reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(fetchResultsList, PhasePerfResult.FETCH_PHASE));
         }
         internalResponse.setPerfResults(reducedQueryPhase.getPerfResults());
-        context.executeNextPhase(this, nextPhaseFactory.apply(internalResponse, queryPhaseResults));
     }
 }
