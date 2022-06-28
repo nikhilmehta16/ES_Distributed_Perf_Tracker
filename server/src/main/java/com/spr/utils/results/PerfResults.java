@@ -51,10 +51,10 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
     public XContentBuilder toInnerXContent(XContentBuilder builder, Params params) throws IOException {
         builder.startObject(PerfResults.Fields.PERFSTATS);
 
+        for (Map.Entry<String, PerfTracker.Stat> entry : perfStatsMap.entrySet()) {
+            builder.field(entry.getKey(), entry.getValue().toString());
+        }
         if (maxPhaseVerbosity > PerfTrackerSettings.VerbosityLevels.Level_1) {
-            for (Map.Entry<String, PerfTracker.Stat> entry : perfStatsMap.entrySet()) {
-                builder.field(entry.getKey(), entry.getValue().toString());
-            }
             for (PhasePerfResult phasePerfResult : this.phasePerfResults.toArray(new PhasePerfResult[0])) {
                 phasePerfResult.toXContent(builder, params);
             }
