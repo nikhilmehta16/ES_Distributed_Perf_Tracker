@@ -80,6 +80,6 @@ public final class FetchSearchResult extends SearchPhaseResult {
     public void writeTo(StreamOutput out) throws IOException {
         contextId.writeTo(out);
         hits.writeTo(out);
-        ShardPerfResult.writeShardPerfResult(getShardPerfResult(),out);
+        ShardPerfResult.writeShardPerfResult(getShardPerfResult(), out);
     }
 }

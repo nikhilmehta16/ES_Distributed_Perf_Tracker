@@ -102,7 +102,7 @@ public class AggregationPhase {
                 context.searcher().search(query, collector);
             } catch (Exception e) {
                 throw new QueryPhaseExecutionException(context.shardTarget(), "Failed to execute global aggregators", e);
-            }finally {
+            } finally {
                 PerfTracker.out("globalAggs.optimize");
             }
         }

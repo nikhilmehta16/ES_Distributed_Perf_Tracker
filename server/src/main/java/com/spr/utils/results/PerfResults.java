@@ -14,14 +14,14 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 import com.spr.utils.performance.PerfTracker;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
-public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragment {
-    private final List<PhasePerfResult>  phasePerfResults = new ArrayList<>();
+public class PerfResults implements ToXContentFragment {
+
+    private final List<PhasePerfResult> phasePerfResults = new ArrayList<>();
     private int maxPhaseVerbosity;
     private final HashMap<String, PerfTracker.Stat> perfStatsMap = new HashMap<>();
 
@@ -29,21 +29,13 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
         public static final String PERFSTATS = "perf_stats";
     }
 
-    public PerfResults(List<PhasePerfResult> phasePerfResults) {
-        for (PhasePerfResult phasePerfResult : phasePerfResults) {
-            this.addPhasePerfResult(phasePerfResult);
-        }
-    }
-
-    @Override
-    public Iterator<PhasePerfResult> iterator() {
-        return phasePerfResults.iterator();
+    public PerfResults() {
     }
 
     @Override
     public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
-        if (maxPhaseVerbosity > PerfTrackerSettings.VerbosityLevels.Level_0) {
-           toInnerXContent(builder,params);
+        if (maxPhaseVerbosity > PerfTrackerSettings.VerbosityLevels.LEVEL_0) {
+           toInnerXContent(builder, params);
         }
         return builder;
     }
@@ -54,8 +46,8 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
         for (Map.Entry<String, PerfTracker.Stat> entry : perfStatsMap.entrySet()) {
             builder.field(entry.getKey(), entry.getValue().toString());
         }
-        if (maxPhaseVerbosity > PerfTrackerSettings.VerbosityLevels.Level_1) {
-            for (PhasePerfResult phasePerfResult : this.phasePerfResults.toArray(new PhasePerfResult[0])) {
+        if (maxPhaseVerbosity > PerfTrackerSettings.VerbosityLevels.LEVEL_1) {
+            for (PhasePerfResult phasePerfResult : this.phasePerfResults) {
                 phasePerfResult.toXContent(builder, params);
             }
         }
@@ -63,7 +55,6 @@ public class PerfResults implements Iterable<PhasePerfResult>, ToXContentFragmen
         builder.endObject();
         return builder;
     }
-//    public PerfTracker.Stat getPerfStats(){return this.coordinatorPerfStats;}
 
     public void addPhasePerfResult(PhasePerfResult phasePerfResult) {
         this.phasePerfResults.add(phasePerfResult);

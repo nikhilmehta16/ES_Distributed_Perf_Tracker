@@ -247,7 +247,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         clusterService.getClusterSettings().addSettingsUpdateConsumer(LOW_LEVEL_CANCELLATION_SETTING, this::setLowLevelCancellation);
 
         clusterPerfVerbosity = CLUSTER_VERBOSITY_LEVEL.get(settings);
-        clusterService.getClusterSettings().addSettingsUpdateConsumer(CLUSTER_VERBOSITY_LEVEL,this::setClusterPerfVerbosity);
+        clusterService.getClusterSettings().addSettingsUpdateConsumer(CLUSTER_VERBOSITY_LEVEL, this::setClusterPerfVerbosity);
     }
 
     private void validateKeepAlives(TimeValue defaultKeepAlive, TimeValue maxKeepAlive) {
@@ -340,7 +340,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
             @Override
             public void onResponse(ShardSearchRequest rewritten) {
                 // fork the execution in the search thread pool
-                runAsync(getExecutor(shard), () -> executeDfsPhase(request, task, keepStatesInContext), listener);
+                runAsync(getExecutor(shard), () -> executeDfsPhase(request, task, keepStatesInContext), listener, shard);
             }
 
             @Override
@@ -403,8 +403,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                     }
                 }
                 // fork the execution in the search thread pool
-                runAsync(getExecutor(shard), ()->executeQueryPhase(orig, task, keepStatesInContext), listener, shard.shardId().toString(),
-                    shard.indexSettings().getPerfVerbosity());
+                runAsync(getExecutor(shard), () -> executeQueryPhase(orig, task, keepStatesInContext), listener, shard);
             }
 
             @Override
@@ -422,15 +421,16 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         }
     }
 
-    private <T> void runAsync(Executor executor, CheckedSupplier<T, Exception> executable, ActionListener<T> listener) {
-        executor.execute(ActionRunnable.supply(listener, executable::get));
-    }
-
-    private <T> void runAsync(Executor executor, CheckedSupplier<T, Exception> executable, ActionListener<T> listener, String shardId,
-                              int indexPerfVerbosity) {
-        PerfTrackingSupplier perfTrackingSupplier = new PerfTrackingSupplier(executable, shardId, indexPerfVerbosity,
-            clusterPerfVerbosity);
-        executor.execute(ActionRunnable.supply(listener, perfTrackingSupplier));
+    private <T extends SearchPhaseResult> void runAsync(Executor executor, CheckedSupplier<T, Exception> executable,
+                                                        ActionListener<T> listener, IndexShard indexShard) {
+        if (indexShard == null) {
+            executor.execute(ActionRunnable.supply(listener, executable));
+        } else {
+            PerfTrackingSupplier<T, Exception> perfTrackingSupplier =
+                new PerfTrackingSupplier<>(executable, indexShard.shardId().toString(),
+                    indexShard.indexSettings().getPerfVerbosity(), clusterPerfVerbosity);
+            executor.execute(ActionRunnable.supply(listener, perfTrackingSupplier));
+        }
     }
 
     private SearchPhaseResult executeQueryPhase(ShardSearchRequest request,
@@ -510,7 +510,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 // we handle the failure in the failure listener below
                 throw e;
             }
-        }, wrapFailureListener(listener, readerContext, markAsUsed));
+        }, wrapFailureListener(listener, readerContext, markAsUsed), readerContext.indexShard());
     }
 
     public void executeQueryPhase(QuerySearchRequest request, SearchShardTask task, ActionListener<QuerySearchResult> listener) {
@@ -540,7 +540,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 // we handle the failure in the failure listener below
                 throw e;
             }
-        }, wrapFailureListener(listener, readerContext, markAsUsed));
+        }, wrapFailureListener(listener, readerContext, markAsUsed), readerContext.indexShard());
     }
 
     private Executor getExecutor(IndexShard indexShard) {
@@ -584,14 +584,13 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 // we handle the failure in the failure listener below
                 throw e;
             }
-        }, wrapFailureListener(listener, readerContext, markAsUsed));
+        }, wrapFailureListener(listener, readerContext, markAsUsed), readerContext.indexShard());
     }
 
     public void executeFetchPhase(ShardFetchRequest request, SearchShardTask task, ActionListener<FetchSearchResult> listener) {
         final ReaderContext readerContext = findReaderContext(request.contextId(), request);
         final ShardSearchRequest shardSearchRequest = readerContext.getShardSearchRequest(request.getShardSearchRequest());
         final Releasable markAsUsed = readerContext.markAsUsed(getKeepAlive(shardSearchRequest));
-        int indexPerfVerbosity = getShard(shardSearchRequest).indexSettings().getPerfVerbosity();
         runAsync(getExecutor(readerContext.indexShard()), () -> {
             try (SearchContext searchContext = createContext(readerContext, shardSearchRequest, task, false)) {
                 if (request.lastEmittedDoc() != null) {
@@ -614,7 +613,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 // we handle the failure in the failure listener below
                 throw e;
             }
-        }, wrapFailureListener(listener, readerContext, markAsUsed), shardSearchRequest.shardId().toString(), indexPerfVerbosity);
+        }, wrapFailureListener(listener, readerContext, markAsUsed), getShard(shardSearchRequest));
     }
 
     private ReaderContext getReaderContext(ShardSearchContextId id) {

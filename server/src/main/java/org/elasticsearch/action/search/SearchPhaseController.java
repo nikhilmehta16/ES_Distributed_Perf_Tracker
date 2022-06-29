@@ -479,7 +479,7 @@ public final class SearchPhaseController {
             topDocsStats.timedOut, topDocsStats.terminatedEarly, reducedSuggest, aggregations, shardResults, sortedTopDocs,
             sortValueFormats, numReducePhases, size, from, false);
         reducedQueryPhase.addPhasePerfResult(PhasePerfResult.createPhasePerfResult(queryResults, PhasePerfResult.QUERY_PHASE));
-        reducedQueryPhase.getPerfResults().addPerfStats("ReducedQueryPhase",perfStats.stopAndGetStat());
+        reducedQueryPhase.addPerfStats("ReducedQueryPhase", perfStats.stopAndGetStat());
         return reducedQueryPhase;
     }
 
@@ -561,7 +561,7 @@ public final class SearchPhaseController {
         final int from;
         // sort value formats used to sort / format the result
         final DocValueFormat[] sortValueFormats;
-        private PerfResults perfResults = new PerfResults(Collections.emptyList());
+        private PerfResults perfResults;
 
         ReducedQueryPhase(TotalHits totalHits, long fetchHits, float maxScore, boolean timedOut, Boolean terminatedEarly, Suggest suggest,
                           InternalAggregations aggregations, SearchProfileShardResults shardResults, SortedTopDocs sortedTopDocs,
@@ -593,8 +593,18 @@ public final class SearchPhaseController {
             return new InternalSearchResponse(hits, aggregations, suggest, shardResults, timedOut, terminatedEarly, numReducePhases);
         }
 
-        public void addPhasePerfResult(PhasePerfResult phasePerfResult){
+        public void addPhasePerfResult(PhasePerfResult phasePerfResult) {
+            if (perfResults == null) {
+                perfResults = new PerfResults();
+            }
             this.perfResults.addPhasePerfResult(phasePerfResult);
+        }
+
+        public void addPerfStats(String name, PerfTracker.Stat stat) {
+            if (perfResults == null) {
+                perfResults = new PerfResults();
+            }
+            this.perfResults.addPerfStats(name, stat);
         }
 
         public PerfResults getPerfResults(){
