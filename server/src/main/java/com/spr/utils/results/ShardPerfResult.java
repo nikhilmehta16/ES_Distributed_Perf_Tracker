@@ -25,9 +25,10 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.concurrent.TimeUnit;
+import java.io.Serializable;
 
 
-public class ShardPerfResult implements ToXContentObject, Writeable {
+public class ShardPerfResult implements ToXContentObject, Writeable, Serializable {
 
     private static final Logger logger = LogManager.getLogger(ShardPerfResult.class);
 
