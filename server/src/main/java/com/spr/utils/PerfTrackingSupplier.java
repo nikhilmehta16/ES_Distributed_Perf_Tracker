@@ -24,9 +24,7 @@ public class PerfTrackingSupplier<T extends SearchPhaseResult, E extends Excepti
     }
 
     public T get() throws E {
-        // get.totalTime
-        long executionStartTime = System.nanoTime();
-        long executionDelay = executionStartTime - creationTime;
+        long executionDelay = System.nanoTime() - creationTime;
         PerfTracker.reset();
         PerfTracker.PerfStats perfStats = PerfTracker.start();
         PerfTracker.executorDelay(executionDelay);
@@ -36,8 +34,7 @@ public class PerfTrackingSupplier<T extends SearchPhaseResult, E extends Excepti
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-        long executionTime = System.nanoTime() - executionStartTime;
-        result.setShardPerfResult(new ShardPerfResult(executionTime, executionDelay, perfStats.stopAndGetStat(), shardId, verbosity));
+        result.setShardPerfResult(new ShardPerfResult(perfStats.stopAndGetStat(), shardId, verbosity));
         return result;
     }
 }

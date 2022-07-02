@@ -24,7 +24,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.concurrent.TimeUnit;
 import java.io.Serializable;
 
 
@@ -33,23 +32,17 @@ public class ShardPerfResult implements ToXContentObject, Writeable, Serializabl
     private static final Logger logger = LogManager.getLogger(ShardPerfResult.class);
 
     private final String perfStatName;
-    private final long executionTime;
-    private final long executionDelay;
     private final int verbosity;
     private final PerfTracker.Stat stat;
     private MergedStat mergedStat;
 
-    public ShardPerfResult(long executionTime, long executionDelay, PerfTracker.Stat stat, String perfStatName, int verbosity) {
+    public ShardPerfResult(PerfTracker.Stat stat, String perfStatName, int verbosity) {
         this.perfStatName = perfStatName;
-        this.executionTime = TimeUnit.NANOSECONDS.toMillis(executionTime);
-        this.executionDelay = TimeUnit.NANOSECONDS.toMillis(executionDelay);
         this.verbosity = verbosity;
         this.stat = stat;
     }
 
     public static final class Fields {
-        public static final String EXECUTION_TIME = "executionTime";
-        public static final String EXECUTION_DELAY = "executionDelay";
         public static final String PERFSTATS = "shardPerfStats";
     }
 
@@ -64,8 +57,6 @@ public class ShardPerfResult implements ToXContentObject, Writeable, Serializabl
     public XContentBuilder toInnerXContent(XContentBuilder builder) throws IOException {
         builder.field(perfStatName);
         builder.startObject();
-        builder.field(Fields.EXECUTION_TIME, this.executionTime);
-        builder.field(Fields.EXECUTION_DELAY, this.executionDelay);
         if (this.stat != null) {
             builder.field(Fields.PERFSTATS, this.stat.toString());
         }
@@ -75,14 +66,6 @@ public class ShardPerfResult implements ToXContentObject, Writeable, Serializabl
 
     public String getPerfStatName() {
         return perfStatName;
-    }
-
-    public long getExecutionTime() {
-        return executionTime;
-    }
-
-    public long getExecutionDelay() {
-        return executionDelay;
     }
 
     public int getVerbosity(){
