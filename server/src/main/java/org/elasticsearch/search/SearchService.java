@@ -473,8 +473,12 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
 
     private QueryFetchSearchResult executeFetchPhase(ReaderContext reader, SearchContext context, long afterQueryTime) {
         try (SearchOperationListenerExecutor executor = new SearchOperationListenerExecutor(context, true, afterQueryTime)){
+            PerfTracker.in("docIds.shortcut");
             shortcutDocIdsToLoad(context);
+            PerfTracker.out("docIds.shortcut");
+            PerfTracker.in("fetchPhase.execute");
             fetchPhase.execute(context);
+            PerfTracker.out("fetchPhase.execute");
             if (reader.singleSession()) {
                 freeReaderContext(reader.id());
             }
@@ -1095,10 +1099,12 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         int numSuggestDocs = 0;
         final List<CompletionSuggestion> completionSuggestions;
         if (suggest != null && suggest.hasScoreDocs()) {
+            PerfTracker.in("docIds.suggest");
             completionSuggestions = suggest.filter(CompletionSuggestion.class);
             for (CompletionSuggestion completionSuggestion : completionSuggestions) {
                 numSuggestDocs += completionSuggestion.getOptions().size();
             }
+            PerfTracker.out("docIds.suggest");
         } else {
             completionSuggestions = Collections.emptyList();
         }

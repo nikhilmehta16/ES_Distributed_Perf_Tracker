@@ -103,7 +103,9 @@ public class FetchPhase {
         SearchHit[] hits = new SearchHit[context.docIdsToLoadSize()];
 
         List<FetchSubPhaseProcessor> processors = getProcessors(context.shardTarget(), fetchContext);
+        PerfTracker.in("get.nestedDocuments");
         NestedDocuments nestedDocuments = context.getNestedDocuments();
+        PerfTracker.out("get.nestedDocuments");
 
         int currentReaderIndex = -1;
         LeafReaderContext currentReaderContext = null;
@@ -137,7 +139,9 @@ public class FetchPhase {
                         processor.setNextReader(currentReaderContext);
                     }
                     PerfTracker.out("set.nextReader");
+                    PerfTracker.in("get.leafNestedDocs");
                     leafNestedDocuments = nestedDocuments.getLeafNestedDocuments(currentReaderContext);
+                    PerfTracker.out("get.leafNestedDocs");
                 }
                 assert currentReaderContext != null;
                 HitContext hit = prepareHitContext(

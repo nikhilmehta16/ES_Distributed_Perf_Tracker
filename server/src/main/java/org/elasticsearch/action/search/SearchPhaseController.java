@@ -462,6 +462,7 @@ public final class SearchPhaseController {
         }
         final Suggest reducedSuggest;
         final List<CompletionSuggestion> reducedCompletionSuggestions;
+        PerfTracker.in("suggest.reduce");
         if (groupedSuggestions.isEmpty()) {
             reducedSuggest = null;
             reducedCompletionSuggestions = Collections.emptyList();
@@ -469,11 +470,18 @@ public final class SearchPhaseController {
             reducedSuggest = new Suggest(Suggest.reduce(groupedSuggestions));
             reducedCompletionSuggestions = reducedSuggest.filter(CompletionSuggestion.class);
         }
+        PerfTracker.out("suggest.reduce");
+
         PerfTracker.in("aggs.reduce");
         final InternalAggregations aggregations = reduceAggs(aggReduceContextBuilder, performFinalReduce, bufferedAggs);
         PerfTracker.out("aggs.reduce");
+
         final SearchProfileShardResults shardResults = profileResults.isEmpty() ? null : new SearchProfileShardResults(profileResults);
+
+        PerfTracker.in("sort.docs");
         final SortedTopDocs sortedTopDocs = sortDocs(isScrollRequest, bufferedTopDocs, from, size, reducedCompletionSuggestions);
+        PerfTracker.out("sort.docs");
+
         final TotalHits totalHits = topDocsStats.getTotalHits();
         ReducedQueryPhase reducedQueryPhase = new ReducedQueryPhase(totalHits, topDocsStats.fetchHits, topDocsStats.getMaxScore(),
             topDocsStats.timedOut, topDocsStats.terminatedEarly, reducedSuggest, aggregations, shardResults, sortedTopDocs,
