@@ -6,10 +6,11 @@ import org.elasticsearch.common.xcontent.ToXContentObject;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-public class MergedStat implements ToXContentObject {
+public class MergedStat implements ToXContentObject, Serializable {
 
     private static final int MAX_CALL_STACK_DEPTH = Integer.parseInt(System.getProperty("perf.stat.max.call.stack.depth", "200"));
 
