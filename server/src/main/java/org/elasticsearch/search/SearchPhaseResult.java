@@ -16,6 +16,7 @@ import org.elasticsearch.search.internal.ShardSearchContextId;
 import org.elasticsearch.search.internal.ShardSearchRequest;
 import org.elasticsearch.search.query.QuerySearchResult;
 import org.elasticsearch.transport.TransportResponse;
+import com.spr.utils.results.ShardPerfResult;
 
 import java.io.IOException;
 
@@ -34,6 +35,16 @@ public abstract class SearchPhaseResult extends TransportResponse {
     protected ShardSearchContextId contextId;
     private ShardSearchRequest shardSearchRequest;
     private RescoreDocIds rescoreDocIds = RescoreDocIds.EMPTY;
+
+    private ShardPerfResult shardPerfResult;
+
+    public void setShardPerfResult(ShardPerfResult shardPerfResult){
+        this.shardPerfResult = shardPerfResult;
+    }
+
+    public ShardPerfResult getShardPerfResult(){
+        return shardPerfResult;
+    }
 
     protected SearchPhaseResult() {
 

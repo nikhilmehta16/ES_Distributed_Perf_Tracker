@@ -33,6 +33,7 @@ import org.elasticsearch.search.internal.InternalSearchResponse;
 import org.elasticsearch.search.profile.ProfileShardResult;
 import org.elasticsearch.search.profile.SearchProfileShardResults;
 import org.elasticsearch.search.suggest.Suggest;
+import com.spr.utils.results.PerfResults;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -132,6 +133,10 @@ public class SearchResponse extends ActionResponse implements StatusToXContentOb
      */
     public SearchHits getHits() {
         return internalResponse.hits();
+    }
+
+    public PerfResults getPerfResults() {
+        return internalResponse.getPerfResults();
     }
 
     public Aggregations getAggregations() {

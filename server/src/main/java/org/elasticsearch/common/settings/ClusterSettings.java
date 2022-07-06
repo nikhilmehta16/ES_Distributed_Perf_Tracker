@@ -114,6 +114,7 @@ import org.elasticsearch.transport.RemoteConnectionStrategy;
 import org.elasticsearch.transport.SniffConnectionStrategy;
 import org.elasticsearch.transport.TransportSettings;
 import org.elasticsearch.watcher.ResourceWatcherService;
+import com.spr.utils.PerfTrackerSettings;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -550,6 +551,7 @@ public final class ClusterSettings extends AbstractScopedSettings {
             FsHealthService.ENABLED_SETTING,
             FsHealthService.REFRESH_INTERVAL_SETTING,
             FsHealthService.SLOW_PATH_LOGGING_THRESHOLD_SETTING,
+            PerfTrackerSettings.CLUSTER_VERBOSITY_LEVEL,
             IndexingPressure.MAX_INDEXING_BYTES)));
 
     public static List<SettingUpgrader<?>> BUILT_IN_SETTING_UPGRADERS = Collections.unmodifiableList(Arrays.asList(

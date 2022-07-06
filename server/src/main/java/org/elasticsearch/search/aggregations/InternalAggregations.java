@@ -16,6 +16,7 @@ import org.elasticsearch.search.aggregations.pipeline.PipelineAggregator;
 import org.elasticsearch.search.aggregations.pipeline.PipelineAggregator.PipelineTree;
 import org.elasticsearch.search.aggregations.pipeline.SiblingPipelineAggregator;
 import org.elasticsearch.search.aggregations.support.AggregationPath;
+import com.spr.utils.performance.PerfTracker;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -188,13 +189,16 @@ public final class InternalAggregations extends Aggregations implements Writeabl
      * aggregations (both embedded parent/sibling as well as top-level sibling pipelines)
      */
     public static InternalAggregations topLevelReduce(List<InternalAggregations> aggregationsList, ReduceContext context) {
+        PerfTracker.in("topLevelReduce.reduce");
         InternalAggregations reduced = reduce(aggregationsList, context,
                 reducedAggregations -> new InternalAggregations(reducedAggregations, context.pipelineTreeForBwcSerialization()));
         if (reduced == null) {
             return null;
         }
+        PerfTracker.out("topLevelReduce.reduce");
 
         if (context.isFinalReduce()) {
+            PerfTracker.in("topLevelReduce.finalReduce");
             List<InternalAggregation> reducedInternalAggs = reduced.getInternalAggregations();
             reducedInternalAggs = reducedInternalAggs.stream()
                 .map(agg -> agg.reducePipelines(agg, context, context.pipelineTreeRoot().subTree(agg.getName())))
@@ -205,6 +209,7 @@ public final class InternalAggregations extends Aggregations implements Writeabl
                 InternalAggregation newAgg = sib.doReduce(from(reducedInternalAggs), context);
                 reducedInternalAggs.add(newAgg);
             }
+            PerfTracker.out("topLevelReduce.finalReduce");
             return from(reducedInternalAggs);
         }
         return reduced;
@@ -228,6 +233,7 @@ public final class InternalAggregations extends Aggregations implements Writeabl
 
         // first we collect all aggregations of the same type and list them together
         Map<String, List<InternalAggregation>> aggByName = new HashMap<>();
+        PerfTracker.in("reduce.collect");
         for (InternalAggregations aggregations : aggregationsList) {
             for (Aggregation aggregation : aggregations.aggregations) {
                 List<InternalAggregation> aggs = aggByName.computeIfAbsent(
@@ -235,10 +241,12 @@ public final class InternalAggregations extends Aggregations implements Writeabl
                 aggs.add((InternalAggregation)aggregation);
             }
         }
+        PerfTracker.out("reduce.collect");
 
         // now we can use the first aggregation of each list to handle the reduce of its list
         List<InternalAggregation> reducedAggregations = new ArrayList<>();
         for (Map.Entry<String, List<InternalAggregation>> entry : aggByName.entrySet()) {
+            PerfTracker.in("aggs." + entry.getKey());
             List<InternalAggregation> aggregations = entry.getValue();
             // Sort aggregations so that unmapped aggs come last in the list
             // If all aggs are unmapped, the agg that leads the reduction will just return itself
@@ -250,6 +258,8 @@ public final class InternalAggregations extends Aggregations implements Writeabl
                 // no need for reduce phase
                 reducedAggregations.add(first);
             }
+            PerfTracker.out("aggs." + entry.getKey());
+
         }
 
         return ctor.apply(reducedAggregations);

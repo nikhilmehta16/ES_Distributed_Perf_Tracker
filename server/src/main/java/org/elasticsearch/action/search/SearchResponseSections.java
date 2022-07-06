@@ -16,6 +16,7 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.profile.ProfileShardResult;
 import org.elasticsearch.search.profile.SearchProfileShardResults;
 import org.elasticsearch.search.suggest.Suggest;
+import com.spr.utils.results.PerfResults;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -38,6 +39,7 @@ public class SearchResponseSections implements ToXContentFragment {
     protected final boolean timedOut;
     protected final Boolean terminatedEarly;
     protected final int numReducePhases;
+    protected PerfResults perfResults;
 
     public SearchResponseSections(SearchHits hits, Aggregations aggregations, Suggest suggest, boolean timedOut, Boolean terminatedEarly,
                                   SearchProfileShardResults profileResults,  int numReducePhases) {
@@ -102,10 +104,21 @@ public class SearchResponseSections implements ToXContentFragment {
         if (profileResults != null) {
             profileResults.toXContent(builder, params);
         }
+        if (perfResults != null) {
+            perfResults.toXContent(builder, params);
+        }
         return builder;
     }
 
     protected void writeTo(StreamOutput out) throws IOException {
         throw new UnsupportedOperationException();
+    }
+
+    public void setPerfResults(PerfResults perfResults) {
+        this.perfResults = perfResults;
+    }
+
+    public PerfResults getPerfResults() {
+        return this.perfResults;
     }
 }

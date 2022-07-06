@@ -60,6 +60,7 @@ import org.elasticsearch.search.sort.SortAndFormats;
 import org.elasticsearch.search.suggest.SuggestPhase;
 import org.elasticsearch.tasks.TaskCancelledException;
 import org.elasticsearch.threadpool.ThreadPool;
+import com.spr.utils.performance.PerfTracker;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -120,7 +121,9 @@ public class QueryPhase {
 
     public void execute(SearchContext searchContext) throws QueryPhaseExecutionException {
         if (searchContext.hasOnlySuggest()) {
+            PerfTracker.in("query.suggestions");
             suggestPhase.execute(searchContext);
+            PerfTracker.out("query.suggestions");
             searchContext.queryResult().topDocs(new TopDocsAndMaxScore(
                     new TopDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), Lucene.EMPTY_SCORE_DOCS), Float.NaN),
                 new DocValueFormat[0]);
@@ -134,14 +137,25 @@ public class QueryPhase {
         // Pre-process aggregations as late as possible. In the case of a DFS_Q_T_F
         // request, preProcess is called on the DFS phase phase, this is why we pre-process them
         // here to make sure it happens during the QUERY phase
+        PerfTracker.in("aggs.preProcess");
         aggregationPhase.preProcess(searchContext);
+        PerfTracker.out("aggs.preProcess");
+
+        PerfTracker.in("query.executeInternal");
         boolean rescore = executeInternal(searchContext);
+        PerfTracker.out("query.executeInternal");
 
         if (rescore) { // only if we do a regular search
+            PerfTracker.in("query.rescore");
             rescorePhase.execute(searchContext);
+            PerfTracker.out("query.rescore");
         }
+        PerfTracker.in("query.suggestions");
         suggestPhase.execute(searchContext);
+        PerfTracker.out("query.suggestions");
+        PerfTracker.in("query.aggs");
         aggregationPhase.execute(searchContext);
+        PerfTracker.out("query.aggs");
 
         if (searchContext.getProfilers() != null) {
             ProfileShardResult shardResults = SearchProfileShardResults
@@ -279,12 +293,14 @@ public class QueryPhase {
 
             try {
                 boolean shouldRescore;
+                PerfTracker.in("query.search");
                 // if we are optimizing sort and there are no other collectors
                 if (sortAndFormatsForRewrittenNumericSort!=null && collectors.size()==0 && searchContext.getProfilers()==null) {
                     shouldRescore = searchWithCollectorManager(searchContext, searcher, query, leafSorter, timeoutSet);
                 } else {
                     shouldRescore = searchWithCollector(searchContext, searcher, query, collectors, hasFilterCollector, timeoutSet);
                 }
+                PerfTracker.out("query.search");
 
                 // if we rewrote numeric long or date sort, restore fieldDocs based on the original sort
                 if (sortAndFormatsForRewrittenNumericSort!=null) {
@@ -327,6 +343,7 @@ public class QueryPhase {
             queryCollector = QueryCollectorContext.createQueryCollector(collectors);
         }
         QuerySearchResult queryResult = searchContext.queryResult();
+        PerfTracker.in("lucene.search");
         try {
             searcher.search(query, queryCollector);
         } catch (EarlyTerminatingCollector.EarlyTerminationException e) {
@@ -338,13 +355,17 @@ public class QueryPhase {
                 throw new QueryPhaseExecutionException(searchContext.shardTarget(), "Time exceeded");
             }
             queryResult.searchTimedOut(true);
+        } finally {
+            PerfTracker.out("lucene.search");
         }
         if (searchContext.terminateAfter() != SearchContext.DEFAULT_TERMINATE_AFTER && queryResult.terminatedEarly() == null) {
             queryResult.terminatedEarly(false);
         }
+        PerfTracker.in("queryResult.postProcess");
         for (QueryCollectorContext ctx : collectors) {
             ctx.postProcess(queryResult);
         }
+        PerfTracker.out("queryResult.postProcess");
         return topDocsFactory.shouldRescore();
     }
 
@@ -382,6 +403,7 @@ public class QueryPhase {
 
         List<LeafReaderContext> leaves = new ArrayList<>(searcher.getIndexReader().leaves());
         leafSorter.accept(leaves);
+        PerfTracker.in("searcher.search");
         try {
             Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.TOP_SCORES, 1f);
             searcher.search(leaves, weight, sharedManager, searchContext.queryResult(), sortAndFormats.formats, totalHits);
@@ -392,6 +414,8 @@ public class QueryPhase {
                 throw new QueryPhaseExecutionException(searchContext.shardTarget(), "Time exceeded");
             }
             searchContext.queryResult().searchTimedOut(true);
+        } finally {
+            PerfTracker.out("searcher.search");
         }
         return false; // no rescoring when sorting by field
     }

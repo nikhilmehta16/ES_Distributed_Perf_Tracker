@@ -9,6 +9,7 @@
 
 package org.elasticsearch.search;
 
+import com.spr.utils.performance.PerfTracker;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.search.FieldDoc;
@@ -114,6 +115,8 @@ import org.elasticsearch.threadpool.Scheduler.Cancellable;
 import org.elasticsearch.threadpool.ThreadPool;
 import org.elasticsearch.threadpool.ThreadPool.Names;
 import org.elasticsearch.transport.TransportRequest;
+import com.spr.utils.PerfTrackingSupplier;
+import static com.spr.utils.PerfTrackerSettings.CLUSTER_VERBOSITY_LEVEL;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -205,6 +208,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
 
     private final AtomicInteger openScrollContexts = new AtomicInteger();
     private final String sessionId = UUIDs.randomBase64UUID();
+    private volatile int clusterPerfVerbosity;
 
     public SearchService(ClusterService clusterService, IndicesService indicesService,
                          ThreadPool threadPool, ScriptService scriptService, BigArrays bigArrays, FetchPhase fetchPhase,
@@ -241,6 +245,9 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
 
         lowLevelCancellation = LOW_LEVEL_CANCELLATION_SETTING.get(settings);
         clusterService.getClusterSettings().addSettingsUpdateConsumer(LOW_LEVEL_CANCELLATION_SETTING, this::setLowLevelCancellation);
+
+        clusterPerfVerbosity = CLUSTER_VERBOSITY_LEVEL.get(settings);
+        clusterService.getClusterSettings().addSettingsUpdateConsumer(CLUSTER_VERBOSITY_LEVEL, this::setClusterPerfVerbosity);
     }
 
     private void validateKeepAlives(TimeValue defaultKeepAlive, TimeValue maxKeepAlive) {
@@ -275,6 +282,10 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
 
     private void setLowLevelCancellation(Boolean lowLevelCancellation) {
         this.lowLevelCancellation = lowLevelCancellation;
+    }
+
+    private void setClusterPerfVerbosity(int clusterPerfVerbosity) {
+        this.clusterPerfVerbosity = clusterPerfVerbosity;
     }
 
     @Override
@@ -329,7 +340,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
             @Override
             public void onResponse(ShardSearchRequest rewritten) {
                 // fork the execution in the search thread pool
-                runAsync(getExecutor(shard), () -> executeDfsPhase(request, task, keepStatesInContext), listener);
+                runAsync(getExecutor(shard), () -> executeDfsPhase(request, task, keepStatesInContext), listener, shard);
             }
 
             @Override
@@ -392,7 +403,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                     }
                 }
                 // fork the execution in the search thread pool
-                runAsync(getExecutor(shard), () -> executeQueryPhase(orig, task, keepStatesInContext), listener);
+                runAsync(getExecutor(shard), () -> executeQueryPhase(orig, task, keepStatesInContext), listener, shard);
             }
 
             @Override
@@ -410,8 +421,16 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         }
     }
 
-    private <T> void runAsync(Executor executor, CheckedSupplier<T, Exception> executable, ActionListener<T> listener) {
-        executor.execute(ActionRunnable.supply(listener, executable::get));
+    private <T extends SearchPhaseResult> void runAsync(Executor executor, CheckedSupplier<T, Exception> executable,
+                                                        ActionListener<T> listener, IndexShard indexShard) {
+        if (indexShard == null) {
+            executor.execute(ActionRunnable.supply(listener, executable));
+        } else {
+            PerfTrackingSupplier<T, Exception> perfTrackingSupplier =
+                new PerfTrackingSupplier<>(executable, indexShard.shardId().toString(),
+                    indexShard.indexSettings().getPerfVerbosity(), clusterPerfVerbosity);
+            executor.execute(ActionRunnable.supply(listener, perfTrackingSupplier));
+        }
     }
 
     private SearchPhaseResult executeQueryPhase(ShardSearchRequest request,
@@ -422,10 +441,12 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 SearchContext context = createContext(readerContext, request, task, true)) {
             final long afterQueryTime;
             try (SearchOperationListenerExecutor executor = new SearchOperationListenerExecutor(context)) {
+                PerfTracker.in("queryPhase.execute");
                 loadOrExecuteQueryPhase(request, context);
                 if (context.queryResult().hasSearchContext() == false && readerContext.singleSession()) {
                     freeReaderContext(readerContext.id());
                 }
+                PerfTracker.out("queryPhase.execute");
                 afterQueryTime = executor.success();
             }
             if (request.numberOfShards() == 1) {
@@ -452,8 +473,12 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
 
     private QueryFetchSearchResult executeFetchPhase(ReaderContext reader, SearchContext context, long afterQueryTime) {
         try (SearchOperationListenerExecutor executor = new SearchOperationListenerExecutor(context, true, afterQueryTime)){
+            PerfTracker.in("docIds.shortcut");
             shortcutDocIdsToLoad(context);
+            PerfTracker.out("docIds.shortcut");
+            PerfTracker.in("fetchPhase.execute");
             fetchPhase.execute(context);
+            PerfTracker.out("fetchPhase.execute");
             if (reader.singleSession()) {
                 freeReaderContext(reader.id());
             }
@@ -489,7 +514,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 // we handle the failure in the failure listener below
                 throw e;
             }
-        }, wrapFailureListener(listener, readerContext, markAsUsed));
+        }, wrapFailureListener(listener, readerContext, markAsUsed), readerContext.indexShard());
     }
 
     public void executeQueryPhase(QuerySearchRequest request, SearchShardTask task, ActionListener<QuerySearchResult> listener) {
@@ -519,7 +544,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 // we handle the failure in the failure listener below
                 throw e;
             }
-        }, wrapFailureListener(listener, readerContext, markAsUsed));
+        }, wrapFailureListener(listener, readerContext, markAsUsed), readerContext.indexShard());
     }
 
     private Executor getExecutor(IndexShard indexShard) {
@@ -563,7 +588,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 // we handle the failure in the failure listener below
                 throw e;
             }
-        }, wrapFailureListener(listener, readerContext, markAsUsed));
+        }, wrapFailureListener(listener, readerContext, markAsUsed), readerContext.indexShard());
     }
 
     public void executeFetchPhase(ShardFetchRequest request, SearchShardTask task, ActionListener<FetchSearchResult> listener) {
@@ -592,7 +617,7 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
                 // we handle the failure in the failure listener below
                 throw e;
             }
-        }, wrapFailureListener(listener, readerContext, markAsUsed));
+        }, wrapFailureListener(listener, readerContext, markAsUsed), getShard(shardSearchRequest));
     }
 
     private ReaderContext getReaderContext(ShardSearchContextId id) {
@@ -1074,10 +1099,12 @@ public class SearchService extends AbstractLifecycleComponent implements IndexEv
         int numSuggestDocs = 0;
         final List<CompletionSuggestion> completionSuggestions;
         if (suggest != null && suggest.hasScoreDocs()) {
+            PerfTracker.in("docIds.suggest");
             completionSuggestions = suggest.filter(CompletionSuggestion.class);
             for (CompletionSuggestion completionSuggestion : completionSuggestions) {
                 numSuggestDocs += completionSuggestion.getOptions().size();
             }
+            PerfTracker.out("docIds.suggest");
         } else {
             completionSuggestions = Collections.emptyList();
         }
